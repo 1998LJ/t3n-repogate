@@ -171,5 +171,41 @@ class TestRepoGateEngine(unittest.TestCase):
         self.assertEqual(s_proc.returncode, 0)
         self.assertIn("WRONG_SIGNER_REJECTED_OK", s_proc.stdout)
 
+        # Test adversarial forged report + attacker re-sign (Adversarial test 4)
+        forge_cmd = ["node", "-e", """
+        const { ethers } = require('ethers');
+        const crypto = require('crypto');
+        const fs = require('fs');
+        const { verifyProof } = require('./verify_proof');
+
+        const attackerWallet = ethers.Wallet.createRandom();
+        const forgedReport = JSON.stringify({ malicious: true });
+        const hash = crypto.createHash('sha256').update(forgedReport).digest('hex');
+
+        attackerWallet.signMessage(hash).then(sig => {
+          const forgedProof = {
+            report_sha256: hash,
+            agent_did: 'did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169',
+            signer_address: attackerWallet.address,
+            signature: sig,
+            verification_standard: 'T3N-REPOGATE-v1-ECDSA'
+          };
+          const fReportPath = '/tmp/forged_report_test.json';
+          const fProofPath = '/tmp/forged_proof_test.json';
+          fs.writeFileSync(fReportPath, forgedReport);
+          fs.writeFileSync(fProofPath, JSON.stringify(forgedProof));
+
+          const res = verifyProof(fReportPath, fProofPath);
+          if (res.valid) process.exit(1);
+          console.log('FORGED_SIGNER_REJECTED_OK');
+        }).catch(err => {
+          console.error(err);
+          process.exit(1);
+        });
+        """]
+        f_proc = subprocess.run(forge_cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
+        self.assertEqual(f_proc.returncode, 0)
+        self.assertIn("FORGED_SIGNER_REJECTED_OK", f_proc.stdout)
+
 if __name__ == "__main__":
     unittest.main()

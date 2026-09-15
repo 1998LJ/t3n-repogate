@@ -12,7 +12,7 @@ It bridges off-chain repository lifecycle telemetry with T3N-attested zero-trust
 
 ## 🏛 Architecture & T3N Trust Anchor
 
-RepoGate integrates deeply with the Terminal 3 Network (T3N) WebAssembly runtime and Decentralized Identifier (DID) system:
+RepoGate integrates with the Terminal 3 Network (T3N) WebAssembly runtime (`@terminal3/t3n-sdk` 5.16.0) and Decentralized Identifier (DID) system:
 
 ```
                   ┌──────────────────────────────────────────────┐
@@ -37,8 +37,15 @@ RepoGate integrates deeply with the Terminal 3 Network (T3N) WebAssembly runtime
                        │ Tamper-Proof Audit Artifacts:    │
                        │ 1. Machine report.json           │
                        │ 2. Human REPORT.md (Evidence)    │
+                       │ 3. Attested report.proof.json    │
                        └──────────────────────────────────┘
 ```
+
+### Canonical Agent Identity & Verification Model
+RepoGate binds audit reports cryptographically using standard ECDSA secp256k1 message signing. The official DID and authorized signer address are pinned in [`agent_identity.json`](agent_identity.json):
+- **Agent DID**: `did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169`
+- **Authorized Signer**: `0x64c8C36d03f7deC27553AfF8d98d953D59b049FD`
+- **Identity Binding Model**: Release-pinned DID/signer identity (`T3N-REPOGATE-v1-ECDSA`)
 
 ### The 6-Gate Evaluation Matrix
 
@@ -73,16 +80,22 @@ RepoGate integrates deeply with the Terminal 3 Network (T3N) WebAssembly runtime
 ```bash
 git clone https://github.com/1998LJ/t3n-repogate.git
 cd t3n-repogate
-npm install @terminal3/t3n-sdk
+npm install @terminal3/t3n-sdk ethers
 pip install requests pytest
 ```
 
-### 3. Running T3N DID Attestation
+### 3. Environment Configuration
+Set your T3N signer private key (or let RepoGate generate/load a persistent key at `~/.t3n_agent/repogate_signer.key`):
+```bash
+export T3N_SIGNER_PRIVATE_KEY="your_secp256k1_hex_key"
+```
+
+### 4. Running T3N DID Attestation
 ```bash
 node t3n_auth.js
 ```
 
-### 4. Running PR Evaluation
+### 5. Running PR Evaluation
 ```bash
 python repogate_engine.py --pr https://github.com/yunaremaia/driftcheck/pull/66
 ```
@@ -103,7 +116,7 @@ Full markdown and JSON evidence reports are stored in [`demo_reports/`](demo_rep
 
 ---
 
-## 🛠 Running Unit Tests
+## 🛠 Running Unit & Adversarial Tests
 ```bash
 python test_repogate.py
 ```
@@ -111,7 +124,7 @@ Outputs:
 ```text
 ........
 ----------------------------------------------------------------------
-Ran 8 tests in 8.119s
+Ran 8 tests in 11.215s
 
 OK
 ```
@@ -119,20 +132,48 @@ OK
 ---
 
 ## 🔐 Cryptographic Proof Verification
-RepoGate signs audit reports with the DID-associated Ethereum signer, producing `proof.json`. Verify proof integrity and tamper-resistance via:
+
+RepoGate signs audit reports using ECDSA secp256k1, generating an attested `proof.json`. The independent verifier validates:
+1. Report integrity (SHA-256 hash match).
+2. ECDSA signature recoverability.
+3. Signer match against the authorized release-pinned identity (`agent_identity.json`).
+4. Proof agent DID match against canonical DID.
+
+Run verification:
 ```bash
 node verify_proof.js demo_reports/high_quality_clean_pr66.json demo_reports/high_quality_clean_pr66.proof.json
 ```
+
+Output:
+```json
+[Verify] SUCCESS: Proof is cryptographically valid, untampered, and authorized.
+{
+  "valid": true,
+  "hash_verified": true,
+  "signer_address": "0x64c8C36d03f7deC27553AfF8d98d953D59b049FD",
+  "agent_did": "did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169",
+  "report_sha256": "8785db228cab96748c41f0586dfc2ad16f17b1132f7d65ce5757c8b2012bd441",
+  "attested_at": "2026-09-15T08:13:16.815Z",
+  "standard": "T3N-REPOGATE-v1-ECDSA",
+  "identity_binding": "release-pinned DID/signer identity"
+}
+```
+
+Negative & Adversarial testing is strictly enforced:
+- **Tampered report**: Fails integrity check (Hash mismatch).
+- **Wrong expected signer**: Fails authority check.
+- **Attacker re-sign**: Fails identity binding check against `agent_identity.json`.
 
 ---
 
 ## 📝 T3N SDK Feedback & Observations
 
-During the implementation and end-to-end integration with `@terminal3/t3n-sdk`, the following operational observations were noted:
+During the implementation and end-to-end integration with `@terminal3/t3n-sdk` (v5.16.0), the following operational observations were noted:
 1. **ESM vs CJS Packaging**: `@terminal3/t3n-sdk` strictly requires ESM imports (`import()`); using standard CommonJS `require()` exports an empty object. Documenting this in the primary quickstart improves developer onboarding.
 2. **WASM Component Initialization**: The `loadWasmComponent()` helper resolves cleanly in Node environments, providing reliable cryptographic handshakes.
+3. **DID-Signer Binding**: T3N ADK client utilizes WASM for DID session handshakes. For standalone verifiable attestations, pairing ECDSA secp256k1 message signing with a release-pinned canonical identity manifest (`agent_identity.json`) allows external verifiers to independently confirm authenticity without running a live node daemon.
 
 ---
 
 ## 📄 License
-MIT License. Created by 1998LJ as an autonomous trusted agent on Terminal 3 Network.
+[MIT License](LICENSE). Created by 1998LJ as an autonomous trusted agent on Terminal 3 Network.
