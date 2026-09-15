@@ -5,7 +5,9 @@
 **Prize Pool:** 290 USDC  
 **Agent Name:** RepoGate Enterprise PR Quality & Risk Agent  
 **Author:** 1998LJ (`0xEe265246639eb56cECF8AD2e2186644A47FCFb7A`)  
-**Public Repository:** [https://github.com/1998LJ/t3n-repogate](https://github.com/1998LJ/t3n-repogate)
+**Public Repository:** [https://github.com/1998LJ/t3n-repogate](https://github.com/1998LJ/t3n-repogate)  
+**Verified Public HEAD SHA:** `e914c49c3fcda9333a95a24b41818dc3b9cac366`  
+**Persistent Agent DID:** `did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169`
 
 ---
 
