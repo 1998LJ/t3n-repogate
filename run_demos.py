@@ -3,7 +3,18 @@ import json
 from repogate_engine import RepoGateEngine
 
 def main():
-    engine = RepoGateEngine()
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    if not token:
+        # Fallback to local user hermes env for running demo benchmarks if present
+        try:
+            with open(os.path.expanduser("~/.hermes/.env")) as f:
+                for line in f:
+                    if line.startswith("GH_TOKEN="):
+                        token = line.strip().split("=", 1)[1].strip()
+                        break
+        except Exception:
+            pass
+    engine = RepoGateEngine(github_token=token)
     
     cases = [
         ("yunaremaia", "driftcheck", 66, "high_quality_clean"),
@@ -27,7 +38,7 @@ def main():
         with open(md_path, "w", encoding="utf-8") as f:
             f.write(md_content)
             
-        print(f"    -> Risk: {report['summary']['overall_risk_score']}/100 | Rec: {report['summary']['recommended_action']}")
+        print(f"    -> Risk: {report['risk_score']}/100 | Rec: {report['recommended_action']}")
 
     print("\n[+] All 3 Demo Cases evaluated and reports generated in demo_reports/")
 

@@ -96,8 +96,8 @@ RepoGate includes 3 real-world open source pull request evaluations demonstratin
 | Demo Case | Repository / PR | Risk Score | Decision | Key Findings |
 | :--- | :--- | :--- | :--- | :--- |
 | **Case 1: Clean High-Quality PR** | [`yunaremaia/driftcheck#66`](https://github.com/yunaremaia/driftcheck/pull/66) | **0 / 100** | `MERGED` | Minimal fix (16 loc), regression tests added, CI fully green. |
-| **Case 2: Duplicate Stale Issue** | [`abduznik/bitbox#482`](https://github.com/abduznik/bitbox/pull/482) | **20 / 100** | `WAIT_FOR_REVIEW` | Function already implemented in upstream/main, closed to avoid duplication. |
-| **Case 3: Concurrently Superseded** | [`yunaremaia/driftcheck#68`](https://github.com/yunaremaia/driftcheck/pull/68) | **70 / 100** | `FIX_REQUIRED` | Upstream maintainer landed parallel commit; policy commitments flagged. |
+| **Case 2: Duplicate Stale Issue** | [`abduznik/bitbox#482`](https://github.com/abduznik/bitbox/pull/482) | **65 / 100** | `CLOSE_DUPLICATE` | Function already implemented in upstream/main via PR #397, closed to avoid duplication. |
+| **Case 3: Concurrently Superseded** | [`yunaremaia/driftcheck#68`](https://github.com/yunaremaia/driftcheck/pull/68) | **85 / 100** | `SUPERSEDED` | Upstream maintainer landed parallel commit on main; policy commitments flagged. |
 
 Full markdown and JSON evidence reports are stored in [`demo_reports/`](demo_reports/).
 
@@ -109,11 +109,19 @@ python test_repogate.py
 ```
 Outputs:
 ```text
-......
+........
 ----------------------------------------------------------------------
-Ran 6 tests in 0.001s
+Ran 8 tests in 8.119s
 
 OK
+```
+
+---
+
+## 🔐 Cryptographic Proof Verification
+RepoGate signs audit reports with the DID-associated Ethereum signer, producing `proof.json`. Verify proof integrity and tamper-resistance via:
+```bash
+node verify_proof.js demo_reports/high_quality_clean_pr66.json demo_reports/high_quality_clean_pr66.proof.json
 ```
 
 ---

@@ -2,4 +2,7 @@ node_modules/
 __pycache__/
 *.pyc
 .env
+.t3n_signer.secret
 demo_reports/*.json
+!demo_reports/high_quality_clean_pr66.json
+!demo_reports/high_quality_clean_pr66.proof.json

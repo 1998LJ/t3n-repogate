@@ -1,0 +1,49 @@
+{
+  "target": "yunaremaia/driftcheck#66",
+  "pr_title": "feat(python_version): support setup.py python_requires fallback for version drift detection",
+  "pr_author": "1998LJ",
+  "base_branch": "main",
+  "head_branch": "feat/setup-py-python-version",
+  "risk_score": 0,
+  "merge_readiness": "READY",
+  "recommended_action": "MERGED",
+  "gates": {
+    "duplicate_gate": {
+      "status": "CLEAN",
+      "reason": "No duplicate historical PR or default branch conflict detected"
+    },
+    "issue_state_gate": {
+      "status": "ACTIVE",
+      "reason": "Linked issue is open and no upstream superseding commits detected"
+    },
+    "ci_gate": {
+      "status": "CI Passed",
+      "runs_checked": 1,
+      "evidence": "All 1 workflows concluded successfully"
+    },
+    "regression_test_gate": {
+      "status": "PASSED",
+      "prod_files": [
+        "src/driftcheck/detector.py",
+        "src/driftcheck/detectors/python_version.py"
+      ],
+      "test_files": [
+        "tests/test_detectors/test_python_version.py"
+      ],
+      "xfail_removed_verified": false
+    },
+    "scope_gate": {
+      "status": "OPTIMAL_SCOPE",
+      "changed_files": 3,
+      "diff_lines": 19
+    },
+    "policy_guard": {
+      "status": "PASS",
+      "findings": []
+    }
+  },
+  "blocking_findings": [],
+  "warnings": [],
+  "pr_state": "closed",
+  "merged": true
+}

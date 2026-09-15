@@ -26,7 +26,8 @@ RepoGate integrates with the newly updated Terminal 3 Network documentation and 
 1. **WASM-Powered Session**: Uses `loadWasmComponent()` to initialize the sandboxed cryptographic agent state machine.
 2. **Multi-Party Trust Anchor**: Fetches the trusted manifest dynamically (`fetchTrustedManifest('sandbox')`) from `cn-api.sg.testnet.t3n.terminal3.io`.
 3. **Decentralized Identifier (DID)**: Authenticates an on-chain keypair and generates an attested DID identity:
-   - Authenticated DID: `did:t3n:c525066d26b13a9d97d0998735e96dcbcacc8fb7`
+   - Authenticated Persistent DID: `did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169`
+   - Signer Key Persistence: Controlled via `process.env.T3N_SIGNER_KEY` or local secure store; verified idempotent across runs.
    - State machine verification: Status Code `2` (ACTIVE)
 4. **Autonomous Execution Pipeline**:
    - `Duplicate Gate (A)`: Deep search across GitHub API for merged/open PRs and target branches to prevent wasted cycles.
@@ -51,16 +52,16 @@ RepoGate was exercised against three real-world pull requests representing disti
 
 ### Case 2: Duplicate Stale Issue PR (Duplicate Detection)
 - **PR:** [`abduznik/bitbox#482`](https://github.com/abduznik/bitbox/pull/482)
-- **Risk Score:** **20 / 100**
-- **Decision:** `WAIT_FOR_REVIEW` (Flagged Duplicate)
-- **Telemetry:** Flagged overlapping implementation with merged PR #397; accurately identified author attribution collision.
+- **Risk Score:** **65 / 100**
+- **Decision:** `CLOSE_DUPLICATE` (Flagged Duplicate of Merged Feature)
+- **Telemetry:** Deep GitHub search flagged that linked Issue #379 was already completed and merged into main via PR #397; identified target file presence on main branch and recommended immediate closure.
 - **Artifact:** [`demo_reports/duplicate_dirty_pr_pr482.md`](https://github.com/1998LJ/t3n-repogate/blob/main/demo_reports/duplicate_dirty_pr_pr482.md)
 
 ### Case 3: Concurrently Superseded PR (Post-Submit Race & Policy Guard)
 - **PR:** [`yunaremaia/driftcheck#68`](https://github.com/yunaremaia/driftcheck/pull/68)
-- **Risk Score:** **70 / 100** (High Risk)
-- **Decision:** `FIX_REQUIRED` (Superseded)
-- **Telemetry:** Detected that upstream maintainer landed a parallel commit on main; Policy Guard flagged unapproved response SLA promises.
+- **Risk Score:** **85 / 100** (High Risk)
+- **Decision:** `SUPERSEDED` (Superseded by Upstream)
+- **Telemetry:** Detected that upstream maintainer landed a parallel commit directly on main resolving the same security doc; Policy Guard independently flagged unapproved response SLA promises.
 - **Artifact:** [`demo_reports/superseded_race_pr_pr68.md`](https://github.com/1998LJ/t3n-repogate/blob/main/demo_reports/superseded_race_pr_pr68.md)
 
 ---
@@ -86,5 +87,6 @@ git clone https://github.com/1998LJ/t3n-repogate.git
 cd t3n-repogate
 npm install
 python test_repogate.py
-python run_demos.py
+node t3n_auth.js
+node verify_proof.js
 ```
