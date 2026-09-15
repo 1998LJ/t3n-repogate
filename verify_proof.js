@@ -10,6 +10,8 @@ function verifyProof(reportPath, proofPath, privateKeyHex) {
   const rawReport = fs.readFileSync(reportPath, 'utf8');
   const proof = JSON.parse(fs.readFileSync(proofPath, 'utf8'));
 
+  const expectedHash = crypto.createHash('sha256').update(rawReport, 'utf8').digest('hex');
+
   // 1. Check report hash
   if (expectedHash !== proof.report_sha256) {
     return {
