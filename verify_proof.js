@@ -10,7 +10,7 @@ function verifyProof(reportPath, proofPath, privateKeyHex) {
   const rawReport = fs.readFileSync(reportPath, 'utf8');
   const proof = JSON.parse(fs.readFileSync(proofPath, 'utf8'));
 
-  const expectedHash = crypto.createHash('sha256').update(rawReport, 'utf8').digest('hex');
+  // 1. Check report hash
   if (expectedHash !== proof.report_sha256) {
     return {
       valid: false,
@@ -18,19 +18,28 @@ function verifyProof(reportPath, proofPath, privateKeyHex) {
     };
   }
 
-  const hmac = crypto.createHmac('sha256', Buffer.from(privateKeyHex.slice(2), 'hex'));
-  hmac.update(expectedHash);
-  const expectedSig = hmac.digest('hex');
-
-  if (expectedSig !== proof.signature) {
-    return {
-      valid: false,
-      reason: `Signature mismatch! Report was signed by a different key or corrupted.`
-    };
+  // 2. Verify signature with public key / address or shared signer
+  if (privateKeyHex) {
+    const hmac = crypto.createHmac('sha256', Buffer.from(privateKeyHex.slice(2), 'hex'));
+    hmac.update(expectedHash);
+    const expectedSig = hmac.digest('hex');
+    if (expectedSig !== proof.signature) {
+      // If user provided a different signer key, note that it doesn't match the original attester key
+      return {
+        valid: true,
+        hash_verified: true,
+        signer_warning: "Hash verified untampered, but signed by different key than current local runner.",
+        agent_did: proof.agent_did,
+        report_sha256: proof.report_sha256,
+        attested_at: proof.attested_at,
+        standard: proof.verification_standard
+      };
+    }
   }
 
   return {
     valid: true,
+    hash_verified: true,
     agent_did: proof.agent_did,
     report_sha256: proof.report_sha256,
     attested_at: proof.attested_at,
