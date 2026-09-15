@@ -1,8 +1,9 @@
 {
   "report_sha256": "8785db228cab96748c41f0586dfc2ad16f17b1132f7d65ce5757c8b2012bd441",
   "agent_did": "did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169",
-  "attestation_type": "t3n_hmac_sha256_attestation",
-  "signature": "efaadf979399f466abbdecabdac7dc1c1b77872a4d85a494c393257e77724c85",
-  "attested_at": "2026-09-15T07:25:36.565Z",
-  "verification_standard": "T3N-REPOGATE-v1-CANONICAL"
+  "signer_address": "0x64c8C36d03f7deC27553AfF8d98d953D59b049FD",
+  "attestation_type": "t3n_ecdsa_secp256k1_signature",
+  "signature": "0x00dc5492079306b9627454d90eff3c1861d423bbc0e811001463e03fe7885379372b1bd50927b11c452e2c0e5448279bf366026a5019c3233db5663d5d22f0ab1c",
+  "attested_at": "2026-09-15T08:13:16.815Z",
+  "verification_standard": "T3N-REPOGATE-v1-ECDSA"
 }

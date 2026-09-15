@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { getOrCreateSignerKey } = require('./t3n_auth');
+const { ethers } = require('ethers');
 
-function verifyProof(reportPath, proofPath, privateKeyHex) {
+// P0-1 & P0-2: Strict ECDSA public-key verification
+function verifyProof(reportPath, proofPath, expectedSignerAddress) {
   if (!fs.existsSync(reportPath)) throw new Error(`Report not found: ${reportPath}`);
   if (!fs.existsSync(proofPath)) throw new Error(`Proof not found: ${proofPath}`);
 
@@ -20,28 +21,37 @@ function verifyProof(reportPath, proofPath, privateKeyHex) {
     };
   }
 
-  // 2. Verify signature with public key / address or shared signer
-  if (privateKeyHex) {
-    const hmac = crypto.createHmac('sha256', Buffer.from(privateKeyHex.slice(2), 'hex'));
-    hmac.update(expectedHash);
-    const expectedSig = hmac.digest('hex');
-    if (expectedSig !== proof.signature) {
-      // If user provided a different signer key, note that it doesn't match the original attester key
-      return {
-        valid: true,
-        hash_verified: true,
-        signer_warning: "Hash verified untampered, but signed by different key than current local runner.",
-        agent_did: proof.agent_did,
-        report_sha256: proof.report_sha256,
-        attested_at: proof.attested_at,
-        standard: proof.verification_standard
-      };
-    }
+  // 2. Recover signer address from ECDSA signature
+  let recoveredAddress = null;
+  try {
+    recoveredAddress = ethers.verifyMessage(proof.report_sha256, proof.signature);
+  } catch (err) {
+    return {
+      valid: false,
+      reason: `Cryptographic signature malformed or invalid: ${err.message}`
+    };
+  }
+
+  // Check address match with proof record
+  if (proof.signer_address && recoveredAddress.toLowerCase() !== proof.signer_address.toLowerCase()) {
+    return {
+      valid: false,
+      reason: `Signer address mismatch! Proof claims ${proof.signer_address}, but recovered ${recoveredAddress}.`
+    };
+  }
+
+  // Check against expected signer address (if provided for strict identity pinning)
+  if (expectedSignerAddress && recoveredAddress.toLowerCase() !== expectedSignerAddress.toLowerCase()) {
+    return {
+      valid: false,
+      reason: `Signer authority mismatch! Expected authorized signer ${expectedSignerAddress}, but got ${recoveredAddress}.`
+    };
   }
 
   return {
     valid: true,
     hash_verified: true,
+    signer_address: recoveredAddress,
     agent_did: proof.agent_did,
     report_sha256: proof.report_sha256,
     attested_at: proof.attested_at,
@@ -53,10 +63,10 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   const reportPath = args[0] || path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.json');
   const proofPath = args[1] || path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.proof.json');
-  const privateKey = getOrCreateSignerKey();
+  const expectedSigner = args[2] || null;
 
   console.log(`[Verify] Verifying report ${reportPath} against proof ${proofPath}...`);
-  const result = verifyProof(reportPath, proofPath, privateKey);
+  const result = verifyProof(reportPath, proofPath, expectedSigner);
   if (result.valid) {
     console.log('[Verify] SUCCESS: Proof is cryptographically valid and report is untampered.');
     console.log(JSON.stringify(result, null, 2));

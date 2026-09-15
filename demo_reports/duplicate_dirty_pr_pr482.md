@@ -4,7 +4,7 @@
 **Title:** [tool] octal_to_binary  
 **Author:** @1998LJ  
 **Base / Head:** `main` ← `tool/octal-to-binary`  
-**Overall Risk Score:** 65/100  
+**Overall Risk Score:** 100/100  
 **Merge Readiness:** **BLOCKED**  
 **Recommended Action:** `CLOSE_DUPLICATE`  
 
@@ -14,8 +14,8 @@
 
 | Gate | Status | Detail / Evidence |
 | :--- | :--- | :--- |
-| **Duplicate Gate** | `DUPLICATE` | Target capability already merged in #395 |
-| **Issue State Gate** | `ACTIVE` | Linked issue is open and no upstream superseding commits detected |
+| **Duplicate Gate** | `DUPLICATE` | Target file 'tools/octal_to_binary.py' is already in main. PR modifies an already merged component and overrides authorship. |
+| **Issue State Gate** | `SUPERSEDED` | Upstream maintainer (MateiB20) implemented 'tools/octal_to_binary.py' directly on main (Commit 2f92545). |
 | **CI Gate** | `Submitted` | Commit status is pending |
 | **Regression Test Gate** | `MISSING_TESTS` | Test coverage verified: 0 test files |
 | **Scope Gate** | `OPTIMAL_SCOPE` | Changed files: 1, Diff: 22 lines |
@@ -24,7 +24,8 @@
 ---
 
 ### 2. Blocking Findings
-- ❌ **BLOCKER:** Duplicate implementation detected: Target capability already merged in #395
+- ❌ **BLOCKER:** Duplicate implementation detected: Target file 'tools/octal_to_binary.py' is already in main. PR modifies an already merged component and overrides authorship.
+- ❌ **BLOCKER:** Upstream race: Upstream maintainer (MateiB20) implemented 'tools/octal_to_binary.py' directly on main (Commit 2f92545).
 
 ### 3. Warnings
 - ⚠️ **WARNING:** Modified 1 production code files without adding or updating test cases

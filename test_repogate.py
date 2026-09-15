@@ -2,7 +2,10 @@ import unittest
 from unittest.mock import patch, MagicMock
 import os
 import subprocess
+from pathlib import Path
 from repogate_engine import RepoGateEngine
+
+PROJECT_ROOT = str(Path(__file__).resolve().parent)
 
 class TestRepoGateEngine(unittest.TestCase):
     def setUp(self):
@@ -127,14 +130,46 @@ class TestRepoGateEngine(unittest.TestCase):
           process.exit(1);
         });
         """]
-        proc = subprocess.run(cmd, capture_output=True, text=True, cwd="/Users/liuwenjian/pi-cloud-workspace/projects/repogate")
+        proc = subprocess.run(cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertIn("DID_PERSISTENT_OK", proc.stdout)
 
         # Test tamper proof
         verify_cmd = ["node", "verify_proof.js"]
-        v_proc = subprocess.run(verify_cmd, capture_output=True, text=True, cwd="/Users/liuwenjian/pi-cloud-workspace/projects/repogate")
+        v_proc = subprocess.run(verify_cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertEqual(v_proc.returncode, 0)
         self.assertIn("SUCCESS: Proof is cryptographically valid", v_proc.stdout)
+
+        # Test tamper rejection (negative test)
+        tamper_cmd = ["node", "-e", """
+        const { verifyProof } = require('./verify_proof');
+        const path = require('path');
+        const fs = require('fs');
+        const rPath = path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.json');
+        const pPath = path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.proof.json');
+        const tPath = '/tmp/tamper_sub_test.json';
+        fs.writeFileSync(tPath, fs.readFileSync(rPath, 'utf8') + ' ');
+        const res = verifyProof(tPath, pPath);
+        if (res.valid) process.exit(1);
+        console.log('TAMPER_REJECTED_OK');
+        """]
+        t_proc = subprocess.run(tamper_cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
+        self.assertEqual(t_proc.returncode, 0)
+        self.assertIn("TAMPER_REJECTED_OK", t_proc.stdout)
+
+        # Test wrong signer rejection (negative test)
+        signer_cmd = ["node", "-e", """
+        const { verifyProof } = require('./verify_proof');
+        const path = require('path');
+        const rPath = path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.json');
+        const pPath = path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.proof.json');
+        const wrongSigner = '0x0000000000000000000000000000000000000000';
+        const res = verifyProof(rPath, pPath, wrongSigner);
+        if (res.valid) process.exit(1);
+        console.log('WRONG_SIGNER_REJECTED_OK');
+        """]
+        s_proc = subprocess.run(signer_cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
+        self.assertEqual(s_proc.returncode, 0)
+        self.assertIn("WRONG_SIGNER_REJECTED_OK", s_proc.stdout)
 
 if __name__ == "__main__":
     unittest.main()

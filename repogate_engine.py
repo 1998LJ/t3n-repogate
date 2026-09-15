@@ -268,11 +268,25 @@ class RepoGateEngine:
                     item for item in s_resp.json().get("items", [])
                     if item.get("number") != pr_num
                 ]
-                merged_dup = [d for d in duplicates if d.get("state") == "closed"]
+                # P0-4 Fix: Closed != Merged. Use pull_request.merged_at or is:merged verification
+                merged_dup = [
+                    d for d in duplicates
+                    if d.get("pull_request", {}).get("merged_at") is not None
+                ]
+                if not merged_dup:
+                    # Explicit query with is:merged to guarantee exact merged status
+                    m_search_url = f"https://api.github.com/search/issues?q=repo:{owner}/{repo}+is:pr+is:merged+{query}"
+                    m_resp = self._get(m_search_url)
+                    if m_resp.status_code == 200:
+                        merged_dup = [
+                            item for item in m_resp.json().get("items", [])
+                            if item.get("number") != pr_num
+                        ]
+
                 if merged_dup:
                     return {
                         "status": "DUPLICATE",
-                        "reason": f"Target capability already merged in #{merged_dup[0].get('number')}",
+                        "reason": f"Target capability was already implemented and merged in PR #{merged_dup[0].get('number')} ({merged_dup[0].get('title')})",
                         "conflicting_pr": merged_dup[0].get("html_url")
                     }
                 elif duplicates:

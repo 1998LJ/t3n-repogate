@@ -6,7 +6,7 @@
 **Agent Name:** RepoGate Enterprise PR Quality & Risk Agent  
 **Author:** 1998LJ (`0xEe265246639eb56cECF8AD2e2186644A47FCFb7A`)  
 **Public Repository:** [https://github.com/1998LJ/t3n-repogate](https://github.com/1998LJ/t3n-repogate)  
-**Verified Public HEAD SHA:** `e914c49c3fcda9333a95a24b41818dc3b9cac366`  
+**Verified Release Snapshot:** `v1.0.0` (Tagged Git Release)  
 **Persistent Agent DID:** `did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169`
 
 ---
@@ -29,7 +29,7 @@ RepoGate integrates with the newly updated Terminal 3 Network documentation and 
 2. **Multi-Party Trust Anchor**: Fetches the trusted manifest dynamically (`fetchTrustedManifest('sandbox')`) from `cn-api.sg.testnet.t3n.terminal3.io`.
 3. **Decentralized Identifier (DID)**: Authenticates an on-chain keypair and generates an attested DID identity:
    - Authenticated Persistent DID: `did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169`
-   - Signer Key Persistence: Controlled via `process.env.T3N_SIGNER_KEY` or local secure store; verified idempotent across runs.
+   - Signer Key Persistence: Controlled via `process.env.T3N_SIGNER_PRIVATE_KEY` or local secure store; verified idempotent across runs.
    - State machine verification: Status Code `2` (ACTIVE)
 4. **Autonomous Execution Pipeline**:
    - `Duplicate Gate (A)`: Deep search across GitHub API for merged/open PRs and target branches to prevent wasted cycles.

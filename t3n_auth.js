@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { ethers } = require('ethers');
 
 // P0-2: Deterministic, persistent signer key for T3N DID persistence
 function getOrCreateSignerKey() {
@@ -21,20 +22,20 @@ function getOrCreateSignerKey() {
   return generated;
 }
 
-// P0-3: Sign & Attest PR evaluation report
-function attestReport(reportJsonStr, privateKeyHex, didString) {
+// P0-3 / P0-2: Sign & Attest PR evaluation report using standard Ethereum ECDSA (secp256k1)
+async function attestReport(reportJsonStr, privateKeyHex, didString) {
   const hash = crypto.createHash('sha256').update(reportJsonStr, 'utf8').digest('hex');
-  const hmac = crypto.createHmac('sha256', Buffer.from(privateKeyHex.slice(2), 'hex'));
-  hmac.update(hash);
-  const signature = hmac.digest('hex');
-  
+  const wallet = new ethers.Wallet(privateKeyHex);
+  const signature = await wallet.signMessage(hash);
+
   return {
     report_sha256: hash,
     agent_did: didString,
-    attestation_type: "t3n_hmac_sha256_attestation",
+    signer_address: wallet.address,
+    attestation_type: "t3n_ecdsa_secp256k1_signature",
     signature: signature,
     attested_at: new Date().toISOString(),
-    verification_standard: "T3N-REPOGATE-v1-CANONICAL"
+    verification_standard: "T3N-REPOGATE-v1-ECDSA"
   };
 }
 
@@ -76,7 +77,7 @@ async function main() {
   const demoReportPath = path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.json');
   if (fs.existsSync(demoReportPath)) {
     const rawReport = fs.readFileSync(demoReportPath, 'utf8');
-    const proof = attestReport(rawReport, privateKey, did);
+    const proof = await attestReport(rawReport, privateKey, did);
     const proofPath = path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.proof.json');
     fs.writeFileSync(proofPath, JSON.stringify(proof, null, 2));
     console.log(`[T3N] Cryptographically signed demo report -> ${proofPath}`);
