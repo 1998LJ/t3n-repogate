@@ -1,179 +1,132 @@
-# T3N RepoGate: Autonomous PR Quality & Risk Gate Agent
+# RepoGate
 
-[![T3N Compatible](https://img.shields.io/badge/T3N-Sandboxed%20Agent-blue)](https://terminal3.io)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)](test_repogate.py)
+Autonomous PR Quality & Cryptographic Attestation Gate Agent.
 
-**RepoGate** is an enterprise-grade autonomous pull request risk evaluation and quality gate agent powered by the **Terminal 3 Network (T3N)** decentralized agent infrastructure.
+[![CI](https://github.com/1998LJ/t3n-repogate/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/1998LJ/t3n-repogate/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python: 3.10+](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://www.python.org/downloads/)
+[![Code Style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-It bridges off-chain repository lifecycle telemetry with T3N-attested zero-trust verification, enabling organizations and autonomous DAOs to automatically evaluate, score, and gate pull requests before merge.
-
----
-
-## 🏛 Architecture & T3N Trust Anchor
-
-RepoGate integrates with the Terminal 3 Network (T3N) WebAssembly runtime (`@terminal3/t3n-sdk` 5.16.0) and Decentralized Identifier (DID) system:
-
-```
-                  ┌──────────────────────────────────────────────┐
-                  │          Enterprise PR / CI Pipeline         │
-                  └──────────────────────┬───────────────────────┘
-                                         │
-                       ┌─────────────────▼─────────────────┐
-                       │    RepoGate Autonomous Engine     │
-                       │    (6-Gate Risk & Quality Matrix) │
-                       └─────────────────┬─────────────────┘
-                                         │
-                                         ▼
-            ┌────────────────────────────────────────────────────────┐
-            │             Terminal 3 Network (T3N ADK)               │
-            │  - Cryptographic DID Attestation                       │
-            │  - WASM Client Session & State Machine                 │
-            │  - Multi-Party Trust Anchor Validation                 │
-            └────────────────────────────┬───────────────────────────┘
-                                         │
-                                         ▼
-                       ┌──────────────────────────────────┐
-                       │ Tamper-Proof Audit Artifacts:    │
-                       │ 1. Machine report.json           │
-                       │ 2. Human REPORT.md (Evidence)    │
-                       │ 3. Attested report.proof.json    │
-                       └──────────────────────────────────┘
-```
-
-### Canonical Agent Identity & Verification Model
-RepoGate binds audit reports cryptographically using standard ECDSA secp256k1 message signing. The official DID and authorized signer address are pinned in [`agent_identity.json`](agent_identity.json):
-- **Agent DID**: `did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169`
-- **Authorized Signer**: `0x64c8C36d03f7deC27553AfF8d98d953D59b049FD`
-- **Identity Binding Model**: Release-pinned DID/signer identity (`T3N-REPOGATE-v1-ECDSA`)
-
-### The 6-Gate Evaluation Matrix
-
-1. **Duplicate Gate (`A`)**:
-   - Searches historical merged and open PRs for overlapping tool/function implementations.
-   - Detects if the target functionality has already landed on the `upstream/main` branch.
-   - Flags dirty or duplicate issues before developer effort is wasted.
-2. **Issue State & Race Gate (`B`)**:
-   - Validates if the linked Issue remains open and unassigned.
-   - Executes **Post-Submit Race Detection** to detect if upstream maintainers concurrently closed or resolved the issue.
-3. **True CI Gate (`C`)**:
-   - Inspects real remote GitHub Actions workflow runs (`test`, `lint`, `typecheck`, `eval`).
-   - Strictly distinguishes between local self-testing and authoritative remote CI green status.
-4. **Regression Test Gate (`D`)**:
-   - Enforces test coverage for bug fixes (Failing Test -> Regression Pass verification).
-   - Flags instances where `@pytest.mark.xfail` or tests are removed without proper implementation.
-5. **Scope & Hygiene Gate (`E`)**:
-   - Enforces Minimal Correct Fix philosophy (flags abnormal diff bloat, extraneous file churn, dead residue).
-6. **Policy Document Guard (`F`)**:
-   - Restricts unvetted commitments in policy files (`SECURITY.md`, `SUPPORT.md`, `SLA`, `LICENSE`).
-   - Prevents unauthorized SLAs, fabricated response turnaround times, and hardcoded external contact emails.
+RepoGate is an enterprise-grade automated gatekeeper for GitHub Pull Requests. It evaluates code modifications across 6 rigorous safety gates, detects duplicate or superseded race-condition PRs, identifies silent regressions, and produces untamperable cryptographic proofs bound to a persistent Agent DID via EIP-191 ECDSA signatures.
 
 ---
 
-## 🚀 Quickstart & Installation
+## Quickstart (v1.1 Distribution Architecture)
 
-### 1. Prerequisites
-- Python 3.10+
-- Node.js 18+ (for T3N WebAssembly / ADK runtime)
+### 1. Installation
 
-### 2. Setup
+RepoGate core is pure Python and runs independently of Node.js:
+
 ```bash
+# Recommended for CLI usage (upcoming v1.1 PyPI release)
+pipx install repogate
+
+# Or install in your active Python environment
+pip install repogate
+```
+
+> **Note**: For developers building from source or testing the development branch:
+> ```bash
+> pip install dist/*.whl
+> ```
+
+### 2. Audit a Pull Request
+
+Run a comprehensive 6-gate audit against any public or private GitHub PR:
+
+```bash
+# Basic terminal output
+repogate audit https://github.com/OWNER/REPO/pull/123
+
+# Save machine-readable JSON report
+repogate audit https://github.com/OWNER/REPO/pull/123 --output report.json
+
+# Authenticate with GitHub Token (or set GITHUB_TOKEN environment variable)
+export GITHUB_TOKEN="your_github_token"
+repogate audit https://github.com/OWNER/REPO/pull/123
+```
+
+### 3. Verify Cryptographic Proof
+
+RepoGate features a **Python-native EIP-191 proof verifier**. Proofs can be verified anywhere without Node.js or npm dependencies:
+
+```bash
+repogate verify report.json proof.json
+```
+
+- **Exit Code `0`**: Proof is valid, report is untampered, and signed by the canonical authorized identity.
+- **Exit Code `1`**: Hash mismatch (tampering detected), wrong signer, invalid DID, or corrupted signature.
+- **Exit Code `2`**: File I/O, network, or execution error.
+
+---
+
+## Architecture Overview
+
+```
+External Developer / CI
+        │
+        ▼
+   repogate CLI
+    ├── audit  ──> Python 6-Gate Engine ──> GitHub REST API ──> Machine-Readable Report
+    └── verify ──> Python-Native EIP-191 Verifier ──> Packaged Trust Anchor (agent_identity.json)
+                         │
+                         └── (Optional Reference Oracle: Node/ethers verify_proof.js)
+```
+
+- **Python Execution Engine**: Evaluates PR diffs, commits, CI status, and regression risk.
+- **Cryptographic Trust Anchor**: Encapsulated in `repogate.data/agent_identity.json` and permanently bound to canonical Agent DID (`did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169`).
+- **Node/T3N Layer**: Serves as a reference implementation, proof generator, and cross-language compatibility oracle (`verify_proof.js` / `t3n_auth.js`). Node.js 24 is **only** needed for attestation development, never for CLI execution.
+
+---
+
+## The 6 Enforcement Gates
+
+1. **Duplicate PR Gate**: Identifies identical issue resolutions and previously closed/merged PR duplicates.
+2. **Superseded Race Gate**: Flags competing PRs that modify identical target files within close intervals.
+3. **CI Status Gate**: Validates head commit GitHub Actions runs (success / pending / failure).
+4. **Regression Guard**: Intercepts removed tests, loosened assertions, and suppressed pytest markers.
+5. **Scope Guard**: Detects out-of-scope modifications, massive multi-file changes, and unintended file mutations.
+6. **Policy Guard**: Intercepts unconfirmed bounty claims, fake SLA commitments, leaked tokens, and unauthorized licenses.
+
+---
+
+## Development Setup
+
+Requirements: **Python 3.10+** (and optionally **Node.js 24+** for reference oracle testing).
+
+```bash
+# 1. Clone repository
 git clone https://github.com/1998LJ/t3n-repogate.git
 cd t3n-repogate
-npm install @terminal3/t3n-sdk ethers
-pip install requests pytest
+
+# 2. Set up Python environment
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+
+# 3. Optional: Set up Node oracle dependencies
+npm ci
 ```
 
-### 3. Environment Configuration
-Set your T3N signer private key (or let RepoGate generate/load a persistent key at `~/.t3n_agent/repogate_signer.key`):
-```bash
-export T3N_SIGNER_PRIVATE_KEY="your_secp256k1_hex_key"
-```
+### Running Checks Locally
 
-### 4. Running T3N DID Attestation
 ```bash
-node t3n_auth.js
-```
+# Code formatting & static lint
+ruff check .
+ruff format --check .
 
-### 5. Running PR Evaluation
-```bash
-python repogate_engine.py --pr https://github.com/yunaremaia/driftcheck/pull/66
+# Full Python test suite (unit tests, CLI tests, adversarial tests)
+python3 -m unittest discover -s tests -v
+
+# Cross-language Node reference oracle test
+npm test
+
+# Standard isolated PEP 517 build
+python3 -m build
 ```
 
 ---
 
-## 📊 Live PR Evaluation Demo Cases
+## License
 
-RepoGate includes 3 real-world open source pull request evaluations demonstrating each risk profile:
-
-| Demo Case | Repository / PR | Risk Score | Decision | Key Findings |
-| :--- | :--- | :--- | :--- | :--- |
-| **Case 1: Clean High-Quality PR** | [`yunaremaia/driftcheck#66`](https://github.com/yunaremaia/driftcheck/pull/66) | **0 / 100** | `MERGED` | Minimal fix (16 loc), regression tests added, CI fully green. |
-| **Case 2: Duplicate Stale Issue** | [`abduznik/bitbox#482`](https://github.com/abduznik/bitbox/pull/482) | **65 / 100** | `CLOSE_DUPLICATE` | Function already implemented in upstream/main via PR #397, closed to avoid duplication. |
-| **Case 3: Concurrently Superseded** | [`yunaremaia/driftcheck#68`](https://github.com/yunaremaia/driftcheck/pull/68) | **85 / 100** | `SUPERSEDED` | Upstream maintainer landed parallel commit on main; policy commitments flagged. |
-
-Full markdown and JSON evidence reports are stored in [`demo_reports/`](demo_reports/).
-
----
-
-## 🛠 Running Unit & Adversarial Tests
-```bash
-python test_repogate.py
-```
-Outputs:
-```text
-........
-----------------------------------------------------------------------
-Ran 8 tests in 11.215s
-
-OK
-```
-
----
-
-## 🔐 Cryptographic Proof Verification
-
-RepoGate signs audit reports using ECDSA secp256k1, generating an attested `proof.json`. The independent verifier validates:
-1. Report integrity (SHA-256 hash match).
-2. ECDSA signature recoverability.
-3. Signer match against the authorized release-pinned identity (`agent_identity.json`).
-4. Proof agent DID match against canonical DID.
-
-Run verification:
-```bash
-node verify_proof.js demo_reports/high_quality_clean_pr66.json demo_reports/high_quality_clean_pr66.proof.json
-```
-
-Output:
-```json
-[Verify] SUCCESS: Proof is cryptographically valid, untampered, and authorized.
-{
-  "valid": true,
-  "hash_verified": true,
-  "signer_address": "0x64c8C36d03f7deC27553AfF8d98d953D59b049FD",
-  "agent_did": "did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169",
-  "report_sha256": "8785db228cab96748c41f0586dfc2ad16f17b1132f7d65ce5757c8b2012bd441",
-  "attested_at": "2026-09-15T08:13:16.815Z",
-  "standard": "T3N-REPOGATE-v1-ECDSA",
-  "identity_binding": "release-pinned DID/signer identity"
-}
-```
-
-Negative & Adversarial testing is strictly enforced:
-- **Tampered report**: Fails integrity check (Hash mismatch).
-- **Wrong expected signer**: Fails authority check.
-- **Attacker re-sign**: Fails identity binding check against `agent_identity.json`.
-
----
-
-## 📝 T3N SDK Feedback & Observations
-
-During the implementation and end-to-end integration with `@terminal3/t3n-sdk` (v5.16.0), the following operational observations were noted:
-1. **ESM vs CJS Packaging**: `@terminal3/t3n-sdk` strictly requires ESM imports (`import()`); using standard CommonJS `require()` exports an empty object. Documenting this in the primary quickstart improves developer onboarding.
-2. **WASM Component Initialization**: The `loadWasmComponent()` helper resolves cleanly in Node environments, providing reliable cryptographic handshakes.
-3. **DID-Signer Binding**: T3N ADK client utilizes WASM for DID session handshakes. For standalone verifiable attestations, pairing ECDSA secp256k1 message signing with a release-pinned canonical identity manifest (`agent_identity.json`) allows external verifiers to independently confirm authenticity without running a live node daemon.
-
----
-
-## 📄 License
-[MIT License](LICENSE). Created by 1998LJ as an autonomous trusted agent on Terminal 3 Network.
+This project is licensed under the [MIT License](LICENSE).
