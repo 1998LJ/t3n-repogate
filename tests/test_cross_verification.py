@@ -30,12 +30,17 @@ class TestCrossImplementationContract(unittest.TestCase):
         root_data = json.loads(self.root_identity.read_text(encoding="utf-8"))
         packaged_data = load_canonical_identity()
 
-        for key in ["agent_did", "authorized_signer_address", "identity_binding_model", "verification_standard"]:
-            self.assertEqual(
-                root_data.get(key),
-                packaged_data.get(key),
-                f"Trust anchor drift detected on key {key}!"
-            )
+        keys = (
+            "agent_did",
+            "authorized_signer_address",
+            "identity_binding_model",
+            "standard",
+        )
+
+        self.assertEqual(
+            {k: root_data[k] for k in keys},
+            {k: packaged_data[k] for k in keys},
+        )
 
     def test_positive_vector_parity(self):
         """Verify that positive demo report succeeds on both Python and Node with identical fields."""

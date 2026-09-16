@@ -18,7 +18,12 @@ from .engine import RepoGateEngine
 
 def run_audit(args: argparse.Namespace) -> int:
     """Run PR quality audit and print/save report."""
-    engine = RepoGateEngine(token=args.token)
+    try:
+        engine = RepoGateEngine(github_token=args.token)
+    except Exception as e:
+        sys.stderr.write(f"Error: failed to initialize RepoGateEngine: {e}\n")
+        return 2
+
     try:
         report = engine.evaluate_pr(args.pr_url)
     except Exception as e:
@@ -36,9 +41,9 @@ def run_audit(args: argparse.Namespace) -> int:
         summary = engine.format_markdown_report(report)
         sys.stdout.write(summary + "\n")
 
-    # Exit code contract: 0 = ACCEPT / WARN, 1 = BLOCK
-    overall = report.get("overall_verdict")
-    return 0 if overall in ("ACCEPT", "WARN") else 1
+    # Exit code contract: 0 = READY, 1 = BLOCKED
+    merge_readiness = report.get("merge_readiness")
+    return 0 if merge_readiness == "READY" else 1
 
 
 def run_verify(args: argparse.Namespace) -> int:
@@ -62,8 +67,8 @@ def run_verify(args: argparse.Namespace) -> int:
 
     sys.stdout.write(f"[Verify] Verifying report {rep_file} against proof {prf_file}...\n")
 
-    # If --node is explicitly requested or native crypto is absent, use Node
-    if getattr(args, "node", False) or not ETH_ACCOUNT_AVAILABLE:
+    # If --node is explicitly requested, run Node reference verifier
+    if getattr(args, "node", False):
         code, out, err = verify_proof_with_node(rep_file, prf_file)
         if out:
             sys.stdout.write(out)
@@ -71,7 +76,11 @@ def run_verify(args: argparse.Namespace) -> int:
             sys.stderr.write(err)
         return code
 
-    # Native Python verification
+    # Default production path: strictly Python-native verification
+    if not ETH_ACCOUNT_AVAILABLE:
+        sys.stderr.write("Error: 'eth-account' package is missing but required for native proof verification.\n")
+        return 2
+
     res = verify_proof_native(rep_file, prf_file)
     if res.valid:
         sys.stdout.write("[Verify] SUCCESS: Proof is cryptographically valid, untampered, and authorized.\n")
