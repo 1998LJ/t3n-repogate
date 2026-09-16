@@ -20,10 +20,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Install Ruff
         run: pip install ruff
-      - name: Check code formatting and static analysis
+      - name: Lint with Ruff
         run: |
           ruff check .
           ruff format --check .
@@ -53,9 +53,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install .[dev]
       - name: Run Python unit and CLI test suite
-        run: |
-          python -m unittest discover -s tests -p "test_cli.py" -v
-          python -m unittest discover -s tests -p "test_engine.py" -v
+        run: python -m unittest discover -s tests -v
 
   node-reference:
     runs-on: ubuntu-latest
@@ -66,7 +64,7 @@ jobs:
           node-version: "24"
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Install dependencies
         run: |
           npm ci
@@ -82,7 +80,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Build wheel and sdist
         run: |
           python -m pip install --upgrade pip build
@@ -121,3 +119,43 @@ jobs:
               command -v node && exit 99 || true
               repogate verify "$REPORT" "$PROOF"
             '
+
+  action-smoke:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+      pull-requests: read
+      statuses: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - id: repogate
+        uses: ./
+        with:
+          github-token: ${{ github.token }}
+          fail-on-block: "false"
+      - name: Assert Action Outputs and Contract
+        run: |
+          echo "=== Verifying Action Outputs ==="
+          echo "Target: ${{ steps.repogate.outputs.target }}"
+          echo "Risk score: ${{ steps.repogate.outputs.risk-score }}"
+          echo "Merge readiness: ${{ steps.repogate.outputs.merge-readiness }}"
+          echo "Recommended action: ${{ steps.repogate.outputs.recommended-action }}"
+          echo "Report path: ${{ steps.repogate.outputs.report-path }}"
+          echo "Audit exit code: ${{ steps.repogate.outputs.audit-exit-code }}"
+
+          test -n "${{ steps.repogate.outputs.target }}"
+          test -n "${{ steps.repogate.outputs.risk-score }}"
+          test -n "${{ steps.repogate.outputs.merge-readiness }}"
+          test -n "${{ steps.repogate.outputs.recommended-action }}"
+          test -n "${{ steps.repogate.outputs.report-path }}"
+          test -f "${{ steps.repogate.outputs.report-path }}"
+
+          EXIT_CODE="${{ steps.repogate.outputs.audit-exit-code }}"
+          if [ "$EXIT_CODE" != "0" ] && [ "$EXIT_CODE" != "1" ]; then
+            echo "Unexpected exit code: $EXIT_CODE (must be 0 or 1, not runtime error 2)"
+            exit 1
+          fi
+          echo "Action outputs contract verified successfully!"
