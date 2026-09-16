@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=77.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "t3n-repogate"
+version = "1.1.0.dev0"
+description = "Autonomous PR Quality & Cryptographic Attestation Gate Agent"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "1998LJ"}]
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.28.0",
+    "eth-account>=0.10.0",
+]
+
+[tool.setuptools.package-data]
+"repogate.data" = ["*.json"]
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.0.0",
+    "pytest>=7.0.0",
+    "ruff>=0.13.0",
+    "pyyaml>=6.0.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501", "W291", "E402", "F841"]
+
+[project.scripts]
+repogate = "repogate.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
