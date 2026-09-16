@@ -6,3 +6,11 @@ __pycache__/
 demo_reports/*.json
 !demo_reports/high_quality_clean_pr66.json
 !demo_reports/high_quality_clean_pr66.proof.json
+
+# Build & packaging artifacts
+dist/
+build/
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
