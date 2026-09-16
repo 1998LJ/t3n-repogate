@@ -1,0 +1,7 @@
+{
+  "agent_name": "RepoGate",
+  "agent_did": "did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169",
+  "authorized_signer_address": "0x64c8C36d03f7deC27553AfF8d98d953D59b049FD",
+  "identity_binding_model": "release-pinned DID/signer identity",
+  "standard": "T3N-REPOGATE-v1-ECDSA"
+}
