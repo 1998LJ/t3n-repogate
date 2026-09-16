@@ -62,11 +62,16 @@ jobs:
             echo "ERROR: Installed CLI version mismatch!"
             exit 1
           fi
-      - name: Generate SHA256 checksums
+      - name: Prepare immutable release bundle
         run: |
-          cd dist
-          sha256sum * > SHA256SUMS
-          cat SHA256SUMS
+          mkdir -p release-bundle/dists
+          cp dist/*.whl release-bundle/dists/
+          cp dist/*.tar.gz release-bundle/dists/
+          (
+            cd release-bundle/dists
+            sha256sum * > ../SHA256SUMS
+          )
+          cat release-bundle/SHA256SUMS
       - name: Upload release bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
