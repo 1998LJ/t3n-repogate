@@ -168,7 +168,7 @@ def verify_proof_native(
     )
 
 
-def verify_proof_with_node(
+def _verify_proof_with_node_reference(
     report_path: Union[str, Path],
     proof_path: Union[str, Path],
 ) -> Tuple[int, str, str]:
@@ -194,3 +194,7 @@ def verify_proof_with_node(
         return code, res.stdout, res.stderr
     except FileNotFoundError:
         return 2, "", "Error: 'node' executable not found in PATH\n"
+
+
+# Compatibility oracle alias
+verify_proof_with_node = _verify_proof_with_node_reference
