@@ -138,22 +138,26 @@ class TestRepoGateEngine(unittest.TestCase):
             self.assertIsNone(engine.proxies)
 
     def test_t3n_persistent_did_and_tamper_proof(self):
-        # Run node t3n_auth.js twice and ensure exact same DID
+        # Run node t3n_auth.js sequentially twice and ensure exact same persistent DID
         cmd = [
             "node",
             "-e",
             """
         const { main } = require('./t3n_auth');
-        Promise.all([main(), main()]).then(([r1, r2]) => {
-          if (r1.did !== r2.did) {
-            console.error('DID Mismatch:', r1.did, r2.did);
+        (async () => {
+          try {
+            const r1 = await main();
+            const r2 = await main();
+            if (r1.did !== r2.did) {
+              console.error('DID Mismatch:', r1.did, r2.did);
+              process.exit(1);
+            }
+            console.log('DID_PERSISTENT_OK');
+          } catch (err) {
+            console.error(err);
             process.exit(1);
           }
-          console.log('DID_PERSISTENT_OK');
-        }).catch(err => {
-          console.error(err);
-          process.exit(1);
-        });
+        })();
         """,
         ]
         proc = subprocess.run(cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
