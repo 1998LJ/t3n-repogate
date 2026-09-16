@@ -134,7 +134,9 @@ class TestRepoGateEngine(unittest.TestCase):
         self.assertIn("DID_PERSISTENT_OK", proc.stdout)
 
         # Test tamper proof
-        verify_cmd = ["node", "verify_proof.js"]
+        clean_report_path = os.path.join(PROJECT_ROOT, "demo_reports", "high_quality_clean_pr66.json")
+        clean_proof_path = os.path.join(PROJECT_ROOT, "demo_reports", "high_quality_clean_pr66.proof.json")
+        verify_cmd = ["node", "verify_proof.js", clean_report_path, clean_proof_path]
         v_proc = subprocess.run(verify_cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertEqual(v_proc.returncode, 0)
         self.assertIn("SUCCESS: Proof is cryptographically valid", v_proc.stdout)

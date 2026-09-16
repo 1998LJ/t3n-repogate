@@ -45,16 +45,24 @@ class TestRepoGateCLI(unittest.TestCase):
         self.assertIn("Proof is cryptographically valid", res.stdout)
 
     def test_cli_verify_failure_tampered(self):
-        tampered_report = (
-            self.repo_root / "demo_reports" / "duplicate_dirty_pr_pr482.json"
+        clean_report = (
+            self.repo_root / "demo_reports" / "high_quality_clean_pr66.json"
         )
         clean_proof = (
             self.repo_root / "demo_reports" / "high_quality_clean_pr66.proof.json"
         )
-        res = self.run_cli(["verify", str(tampered_report), str(clean_proof)])
-        self.assertEqual(res.returncode, 1)
-        output = res.stdout + res.stderr
-        self.assertIn("FAILED", output)
+        # Create a real tampered copy of the report
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            f.write(clean_report.read_text(encoding="utf-8") + " ")
+            tampered_path = Path(f.name)
+        try:
+            res = self.run_cli(["verify", str(tampered_path), str(clean_proof)])
+            self.assertEqual(res.returncode, 1)
+            output = res.stdout + res.stderr
+            self.assertIn("REPORT HAS BEEN TAMPERED WITH", output)
+        finally:
+            tampered_path.unlink(missing_ok=True)
 
     def test_import_purity_no_side_effects(self):
         """Verify that importing repogate produces no network, process, or file side-effects."""

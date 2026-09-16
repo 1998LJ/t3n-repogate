@@ -64,13 +64,20 @@ class TestCrossImplementationContract(unittest.TestCase):
 
     def test_tampered_report_parity(self):
         """Verify that tampered report fails on both Python and Node with expected hash mismatch."""
-        py_res = verify_proof_native(self.tampered_report, self.clean_proof)
-        self.assertFalse(py_res.valid)
-        self.assertIn("REPORT HAS BEEN TAMPERED WITH", py_res.reason)
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            f.write(self.clean_report.read_text(encoding="utf-8") + " ")
+            tampered_path = Path(f.name)
+        try:
+            py_res = verify_proof_native(tampered_path, self.clean_proof)
+            self.assertFalse(py_res.valid)
+            self.assertIn("REPORT HAS BEEN TAMPERED WITH", py_res.reason)
 
-        node_code, _, node_err = verify_proof_with_node(self.tampered_report, self.clean_proof)
-        self.assertEqual(node_code, 1)
-        self.assertIn("REPORT HAS BEEN TAMPERED WITH", node_err)
+            node_code, _, node_err = verify_proof_with_node(tampered_path, self.clean_proof)
+            self.assertEqual(node_code, 1)
+            self.assertIn("REPORT HAS BEEN TAMPERED WITH", node_err)
+        finally:
+            tampered_path.unlink(missing_ok=True)
 
     def test_wrong_signer_rejection(self):
         """Verify that proof with wrong claimed/authorized signer is rejected."""
