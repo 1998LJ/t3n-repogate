@@ -1,18 +1,17 @@
 """Attestation and cryptographic proof verification for RepoGate."""
 
-from dataclasses import asdict, dataclass
 import hashlib
 import importlib.resources
 import json
-import os
-from pathlib import Path
 import subprocess
-import sys
+from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
 
 try:
     from eth_account import Account
     from eth_account.messages import encode_defunct
+
     ETH_ACCOUNT_AVAILABLE = True
 except ImportError:
     ETH_ACCOUNT_AVAILABLE = False
@@ -34,7 +33,9 @@ class VerificationResult:
         return {k: v for k, v in asdict(self).items() if v is not None}
 
 
-def load_canonical_identity(identity_config_path: Optional[Union[str, Path]] = None) -> Dict[str, Any]:
+def load_canonical_identity(
+    identity_config_path: Optional[Union[str, Path]] = None,
+) -> Dict[str, Any]:
     """Load canonical trust anchor.
     Precedence:
     1. Explicit path parameter
@@ -61,7 +62,9 @@ def load_canonical_identity(identity_config_path: Optional[Union[str, Path]] = N
     if root_file.exists():
         return json.loads(root_file.read_text(encoding="utf-8"))
 
-    raise RuntimeError("Canonical identity anchor (agent_identity.json) not found in package data or workspace.")
+    raise RuntimeError(
+        "Canonical identity anchor (agent_identity.json) not found in package data or workspace."
+    )
 
 
 def verify_proof_native(

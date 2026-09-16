@@ -1,18 +1,18 @@
 """Cross-implementation and contract parity tests between Node and Python verifiers."""
 
 import json
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from repogate.attestation import (
+    _verify_proof_with_node_reference,
     load_canonical_identity,
     verify_proof_native,
-    _verify_proof_with_node_reference,
     verify_proof_with_node,
 )
 
@@ -54,17 +54,14 @@ class TestCrossImplementationContract(unittest.TestCase):
 
         # Compare extracted payload
         self.assertEqual(
-            py_res.signer_address.lower(),
-            "0x64c8c36d03f7dec27553aff8d98d953d59b049fd".lower()
+            py_res.signer_address.lower(), "0x64c8c36d03f7dec27553aff8d98d953d59b049fd".lower()
         )
-        self.assertEqual(
-            py_res.agent_did,
-            "did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169"
-        )
+        self.assertEqual(py_res.agent_did, "did:t3n:78131a400e1762aeac8d86e90b76449e02cf8169")
 
     def test_tampered_report_parity(self):
         """Verify that tampered report fails on both Python and Node with expected hash mismatch."""
         import tempfile
+
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write(self.clean_report.read_text(encoding="utf-8") + " ")
             tampered_path = Path(f.name)
@@ -117,17 +114,36 @@ class TestCrossImplementationContract(unittest.TestCase):
         base_proof = json.loads(clean_prf_path.read_text(encoding="utf-8"))
 
         vectors = [
-            ("signature_malformed", clean_rep_path.read_bytes(), {**base_proof, "signature": "0x1234deadbeef"}),
-            ("hash_mismatch", clean_rep_path.read_bytes(), {**base_proof, "report_sha256": "0" * 64}),
-            ("missing_signature", clean_rep_path.read_bytes(), {k: v for k, v in base_proof.items() if k != "signature"}),
-            ("missing_did", clean_rep_path.read_bytes(), {k: v for k, v in base_proof.items() if k != "agent_did"}),
+            (
+                "signature_malformed",
+                clean_rep_path.read_bytes(),
+                {**base_proof, "signature": "0x1234deadbeef"},
+            ),
+            (
+                "hash_mismatch",
+                clean_rep_path.read_bytes(),
+                {**base_proof, "report_sha256": "0" * 64},
+            ),
+            (
+                "missing_signature",
+                clean_rep_path.read_bytes(),
+                {k: v for k, v in base_proof.items() if k != "signature"},
+            ),
+            (
+                "missing_did",
+                clean_rep_path.read_bytes(),
+                {k: v for k, v in base_proof.items() if k != "agent_did"},
+            ),
             ("invalid_json_proof", clean_rep_path.read_bytes(), "{not_valid_json"),
         ]
 
         import tempfile
+
         for name, rep_bytes, prf_data in vectors:
-            with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tf_rep, \
-                 tempfile.NamedTemporaryFile(suffix=".proof.json", delete=False) as tf_prf:
+            with (
+                tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tf_rep,
+                tempfile.NamedTemporaryFile(suffix=".proof.json", delete=False) as tf_prf,
+            ):
                 tf_rep.write(rep_bytes)
                 tf_rep.close()
                 if isinstance(prf_data, dict):

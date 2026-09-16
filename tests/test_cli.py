@@ -37,22 +37,17 @@ class TestRepoGateCLI(unittest.TestCase):
 
     def test_cli_verify_success(self):
         report_path = self.repo_root / "demo_reports" / "high_quality_clean_pr66.json"
-        proof_path = (
-            self.repo_root / "demo_reports" / "high_quality_clean_pr66.proof.json"
-        )
+        proof_path = self.repo_root / "demo_reports" / "high_quality_clean_pr66.proof.json"
         res = self.run_cli(["verify", str(report_path), str(proof_path)])
         self.assertEqual(res.returncode, 0)
         self.assertIn("Proof is cryptographically valid", res.stdout)
 
     def test_cli_verify_failure_tampered(self):
-        clean_report = (
-            self.repo_root / "demo_reports" / "high_quality_clean_pr66.json"
-        )
-        clean_proof = (
-            self.repo_root / "demo_reports" / "high_quality_clean_pr66.proof.json"
-        )
+        clean_report = self.repo_root / "demo_reports" / "high_quality_clean_pr66.json"
+        clean_proof = self.repo_root / "demo_reports" / "high_quality_clean_pr66.proof.json"
         # Create a real tampered copy of the report
         import tempfile
+
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write(clean_report.read_text(encoding="utf-8") + " ")
             tampered_path = Path(f.name)
@@ -87,9 +82,9 @@ class TestRepoGateCLI(unittest.TestCase):
         self.assertEqual(purity_res.returncode, 0, f"Import impurity: {purity_res.stderr}")
         self.assertIn("Purity Verified", purity_res.stdout)
 
-
     def test_cli_audit_ready_returns_0(self):
         from unittest.mock import MagicMock, patch
+
         from repogate.cli import build_parser, run_audit
 
         parser = build_parser()
@@ -114,6 +109,7 @@ class TestRepoGateCLI(unittest.TestCase):
 
     def test_cli_audit_blocked_returns_1(self):
         from unittest.mock import MagicMock, patch
+
         from repogate.cli import build_parser, run_audit
 
         parser = build_parser()
@@ -136,6 +132,7 @@ class TestRepoGateCLI(unittest.TestCase):
 
     def test_cli_audit_runtime_error_returns_2(self):
         from unittest.mock import MagicMock, patch
+
         from repogate.cli import build_parser, run_audit
 
         parser = build_parser()
@@ -151,15 +148,18 @@ class TestRepoGateCLI(unittest.TestCase):
 
     def test_cli_audit_passes_token_to_github_token(self):
         from unittest.mock import MagicMock, patch
+
         from repogate.cli import build_parser, run_audit
 
         parser = build_parser()
-        args = parser.parse_args([
-            "audit",
-            "https://github.com/owner/repo/pull/13",
-            "--token",
-            "ghp_test_secret_token_123",
-        ])
+        args = parser.parse_args(
+            [
+                "audit",
+                "https://github.com/owner/repo/pull/13",
+                "--token",
+                "ghp_test_secret_token_123",
+            ]
+        )
 
         mock_report = {
             "merge_readiness": "READY",

@@ -1,11 +1,13 @@
-import unittest
-from unittest.mock import patch, MagicMock
 import os
 import subprocess
+import unittest
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 from repogate_engine import RepoGateEngine
 
 PROJECT_ROOT = str(Path(__file__).resolve().parent)
+
 
 class TestRepoGateEngine(unittest.TestCase):
     def setUp(self):
@@ -15,7 +17,7 @@ class TestRepoGateEngine(unittest.TestCase):
         files = [
             {
                 "filename": "SECURITY.md",
-                "patch": "@@ -0,0 +1,5 @@\n+Please report to security@example.com within 48 hours for a 500 USD reward."
+                "patch": "@@ -0,0 +1,5 @@\n+Please report to security@example.com within 48 hours for a 500 USD reward.",
             }
         ]
         res = self.engine._eval_policy_guard(files)
@@ -33,7 +35,7 @@ class TestRepoGateEngine(unittest.TestCase):
         files = [
             {
                 "filename": "tests/test_foo.py",
-                "patch": "@@ -10,3 +10 @@\n-@pytest.mark.xfail(strict=True)\n def test_something():\n+    assert True"
+                "patch": "@@ -10,3 +10 @@\n-@pytest.mark.xfail(strict=True)\n def test_something():\n+    assert True",
             }
         ]
         res = self.engine._eval_regression_test_gate(files)
@@ -45,7 +47,7 @@ class TestRepoGateEngine(unittest.TestCase):
         files = [
             {
                 "filename": "src/core/parser.py",
-                "patch": "@@ -10,2 +10,2 @@\n-return False\n+return True"
+                "patch": "@@ -10,2 +10,2 @@\n-return False\n+return True",
             }
         ]
         res = self.engine._eval_regression_test_gate(files)
@@ -59,12 +61,20 @@ class TestRepoGateEngine(unittest.TestCase):
                 m.status_code = 200
                 m.json.return_value = {
                     "items": [
-                        {"number": 397, "title": "Add tool octal_to_binary (#379)", "state": "closed", "html_url": "https://github.com/abduznik/bitbox/pull/397"}
+                        {
+                            "number": 397,
+                            "title": "Add tool octal_to_binary (#379)",
+                            "state": "closed",
+                            "html_url": "https://github.com/abduznik/bitbox/pull/397",
+                        }
                     ]
                 }
             elif "contents" in url:
                 m.status_code = 200
-                m.json.return_value = {"name": "octal_to_binary.py", "path": "tools/octal_to_binary.py"}
+                m.json.return_value = {
+                    "name": "octal_to_binary.py",
+                    "path": "tools/octal_to_binary.py",
+                }
             else:
                 m.status_code = 200
                 m.json.return_value = {"default_branch": "main"}
@@ -75,16 +85,22 @@ class TestRepoGateEngine(unittest.TestCase):
                 "title": "Add tool octal_to_binary (#379)",
                 "body": "Closes #379",
                 "base": {"ref": "main"},
-                "number": 482
+                "number": 482,
             }
-            files = [{"filename": "tools/octal_to_binary.py", "status": "modified", "patch": "+# author: @1998LJ\n-# author: @MateiB20"}]
+            files = [
+                {
+                    "filename": "tools/octal_to_binary.py",
+                    "status": "modified",
+                    "patch": "+# author: @1998LJ\n-# author: @MateiB20",
+                }
+            ]
             res = self.engine._eval_duplicate_gate("abduznik", "bitbox", pr_data, files)
             self.assertEqual(res["status"], "DUPLICATE")
             self.assertIn("was already implemented and merged in PR #397", res["reason"])
 
     def test_ci_gate_statuses(self):
         dummy_pr = {"head": {"sha": "abc1234"}}
-        
+
         with patch.object(self.engine, "_get") as mock_get:
             # Mock success
             mock_resp = MagicMock()
@@ -93,21 +109,27 @@ class TestRepoGateEngine(unittest.TestCase):
                 "workflow_runs": [{"conclusion": "success", "status": "completed"}]
             }
             mock_get.return_value = mock_resp
-            ci_success = self.engine._eval_ci_gate("https://api.github.com/repos/dummy/repo", dummy_pr)
+            ci_success = self.engine._eval_ci_gate(
+                "https://api.github.com/repos/dummy/repo", dummy_pr
+            )
             self.assertEqual(ci_success["status"], "CI Passed")
 
             # Mock failure
             mock_resp.json.return_value = {
                 "workflow_runs": [{"conclusion": "failure", "status": "completed"}]
             }
-            ci_failed = self.engine._eval_ci_gate("https://api.github.com/repos/dummy/repo", dummy_pr)
+            ci_failed = self.engine._eval_ci_gate(
+                "https://api.github.com/repos/dummy/repo", dummy_pr
+            )
             self.assertEqual(ci_failed["status"], "CI Failed")
 
             # Mock pending/submitted
             mock_resp.json.return_value = {
                 "workflow_runs": [{"conclusion": None, "status": "in_progress"}]
             }
-            ci_pending = self.engine._eval_ci_gate("https://api.github.com/repos/dummy/repo", dummy_pr)
+            ci_pending = self.engine._eval_ci_gate(
+                "https://api.github.com/repos/dummy/repo", dummy_pr
+            )
             self.assertEqual(ci_pending["status"], "Submitted")
 
     def test_clean_machine_proxy_default(self):
@@ -117,7 +139,10 @@ class TestRepoGateEngine(unittest.TestCase):
 
     def test_t3n_persistent_did_and_tamper_proof(self):
         # Run node t3n_auth.js twice and ensure exact same DID
-        cmd = ["node", "-e", """
+        cmd = [
+            "node",
+            "-e",
+            """
         const { main } = require('./t3n_auth');
         Promise.all([main(), main()]).then(([r1, r2]) => {
           if (r1.did !== r2.did) {
@@ -129,7 +154,8 @@ class TestRepoGateEngine(unittest.TestCase):
           console.error(err);
           process.exit(1);
         });
-        """]
+        """,
+        ]
         proc = subprocess.run(cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertIn("DID_PERSISTENT_OK", proc.stdout)
 
@@ -140,7 +166,10 @@ class TestRepoGateEngine(unittest.TestCase):
         self.assertIn("SUCCESS: Proof is cryptographically valid", v_proc.stdout)
 
         # Test tamper rejection (negative test)
-        tamper_cmd = ["node", "-e", """
+        tamper_cmd = [
+            "node",
+            "-e",
+            """
         const { verifyProof } = require('./verify_proof');
         const path = require('path');
         const fs = require('fs');
@@ -151,13 +180,17 @@ class TestRepoGateEngine(unittest.TestCase):
         const res = verifyProof(tPath, pPath);
         if (res.valid) process.exit(1);
         console.log('TAMPER_REJECTED_OK');
-        """]
+        """,
+        ]
         t_proc = subprocess.run(tamper_cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertEqual(t_proc.returncode, 0)
         self.assertIn("TAMPER_REJECTED_OK", t_proc.stdout)
 
         # Test wrong signer rejection (negative test)
-        signer_cmd = ["node", "-e", """
+        signer_cmd = [
+            "node",
+            "-e",
+            """
         const { verifyProof } = require('./verify_proof');
         const path = require('path');
         const rPath = path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.json');
@@ -166,13 +199,17 @@ class TestRepoGateEngine(unittest.TestCase):
         const res = verifyProof(rPath, pPath, wrongSigner);
         if (res.valid) process.exit(1);
         console.log('WRONG_SIGNER_REJECTED_OK');
-        """]
+        """,
+        ]
         s_proc = subprocess.run(signer_cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertEqual(s_proc.returncode, 0)
         self.assertIn("WRONG_SIGNER_REJECTED_OK", s_proc.stdout)
 
         # Test adversarial forged report + attacker re-sign (Adversarial test 4)
-        forge_cmd = ["node", "-e", """
+        forge_cmd = [
+            "node",
+            "-e",
+            """
         const { ethers } = require('ethers');
         const crypto = require('crypto');
         const fs = require('fs');
@@ -202,10 +239,12 @@ class TestRepoGateEngine(unittest.TestCase):
           console.error(err);
           process.exit(1);
         });
-        """]
+        """,
+        ]
         f_proc = subprocess.run(forge_cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertEqual(f_proc.returncode, 0)
         self.assertIn("FORGED_SIGNER_REJECTED_OK", f_proc.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

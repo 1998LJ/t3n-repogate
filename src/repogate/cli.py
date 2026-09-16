@@ -2,7 +2,6 @@
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 from typing import List, Optional
@@ -78,12 +77,16 @@ def run_verify(args: argparse.Namespace) -> int:
 
     # Default production path: strictly Python-native verification
     if not ETH_ACCOUNT_AVAILABLE:
-        sys.stderr.write("Error: 'eth-account' package is missing but required for native proof verification.\n")
+        sys.stderr.write(
+            "Error: 'eth-account' package is missing but required for native proof verification.\n"
+        )
         return 2
 
     res = verify_proof_native(rep_file, prf_file)
     if res.valid:
-        sys.stdout.write("[Verify] SUCCESS: Proof is cryptographically valid, untampered, and authorized.\n")
+        sys.stdout.write(
+            "[Verify] SUCCESS: Proof is cryptographically valid, untampered, and authorized.\n"
+        )
         sys.stdout.write(json.dumps(res.to_dict(), indent=2) + "\n")
         return 0
     else:
@@ -108,15 +111,25 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Subcommand: audit
     audit_parser = subparsers.add_parser("audit", help="Audit a GitHub Pull Request")
-    audit_parser.add_argument("pr_url", help="GitHub Pull Request URL (e.g. https://github.com/owner/repo/pull/123)")
+    audit_parser.add_argument(
+        "pr_url", help="GitHub Pull Request URL (e.g. https://github.com/owner/repo/pull/123)"
+    )
     audit_parser.add_argument("--output", "-o", help="Path to save output JSON audit report")
-    audit_parser.add_argument("--token", "-t", help="GitHub Personal Access Token (defaults to GITHUB_TOKEN env var)")
+    audit_parser.add_argument(
+        "--token", "-t", help="GitHub Personal Access Token (defaults to GITHUB_TOKEN env var)"
+    )
 
     # Subcommand: verify
-    verify_parser = subparsers.add_parser("verify", help="Verify cryptographic attestation proof of an audit report")
+    verify_parser = subparsers.add_parser(
+        "verify", help="Verify cryptographic attestation proof of an audit report"
+    )
     verify_parser.add_argument("report", help="Path to audit report JSON file")
     verify_parser.add_argument("proof", help="Path to cryptographic proof JSON file")
-    verify_parser.add_argument("--node", action="store_true", help="Force using Node/ethers bridge instead of Python native verifier")
+    verify_parser.add_argument(
+        "--node",
+        action="store_true",
+        help="Force using Node/ethers bridge instead of Python native verifier",
+    )
 
     return parser
 

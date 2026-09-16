@@ -2,6 +2,7 @@
 
 import os
 from typing import Dict, Optional
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -17,11 +18,7 @@ class GitHubClient:
         github_token: Optional[str] = None,
         proxies: Optional[Dict[str, str]] = None,
     ):
-        self.token = (
-            github_token
-            or os.environ.get("GH_TOKEN")
-            or os.environ.get("GITHUB_TOKEN")
-        )
+        self.token = github_token or os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
         if proxies is not None:
             self.proxies = proxies
         elif (
@@ -61,10 +58,6 @@ class GitHubClient:
     def get(self, url: str) -> requests.Response:
         """Perform GET request with retries, headers, and proxy configuration."""
         try:
-            return self.session.get(
-                url, headers=self._headers(), proxies=self.proxies, timeout=15
-            )
+            return self.session.get(url, headers=self._headers(), proxies=self.proxies, timeout=15)
         except Exception:
-            return requests.get(
-                url, headers=self._headers(), proxies=self.proxies, timeout=15
-            )
+            return requests.get(url, headers=self._headers(), proxies=self.proxies, timeout=15)

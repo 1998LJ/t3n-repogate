@@ -23,7 +23,16 @@ dependencies = [
 dev = [
     "build>=1.0.0",
     "pytest>=7.0.0",
+    "ruff>=0.13.0",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501", "W291", "E402", "F841"]
 
 [project.scripts]
 repogate = "repogate.cli:main"
