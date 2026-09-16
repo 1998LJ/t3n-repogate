@@ -3,7 +3,7 @@ requires = ["setuptools>=77.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "repogate"
+name = "t3n-repogate"
 version = "1.1.0.dev0"
 description = "Autonomous PR Quality & Cryptographic Attestation Gate Agent"
 readme = "README.md"

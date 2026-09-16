@@ -19,10 +19,10 @@ RepoGate core is pure Python and runs independently of Node.js:
 
 ```bash
 # Recommended for CLI usage (upcoming v1.1 PyPI release)
-pipx install repogate
+pipx install t3n-repogate
 
 # Or install in your active Python environment
-pip install repogate
+pip install t3n-repogate
 ```
 
 > **Note**: For developers building from source or testing the development branch:
