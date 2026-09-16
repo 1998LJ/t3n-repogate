@@ -73,14 +73,16 @@ async function main() {
   const did = didObj.value || didObj.toString();
   console.log(`[T3N] Successfully authenticated persistent DID: ${did}`);
 
-  // Test report attestation on demo reports if present
-  const demoReportPath = path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.json');
-  if (fs.existsSync(demoReportPath)) {
-    const rawReport = fs.readFileSync(demoReportPath, 'utf8');
-    const proof = await attestReport(rawReport, privateKey, did);
-    const proofPath = path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.proof.json');
-    fs.writeFileSync(proofPath, JSON.stringify(proof, null, 2));
-    console.log(`[T3N] Cryptographically signed demo report -> ${proofPath}`);
+  // Test report attestation on demo reports if present (only when explicitly requested via env)
+  if (process.env.REGENERATE_DEMO_PROOFS === 'true') {
+    const demoReportPath = path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.json');
+    if (fs.existsSync(demoReportPath)) {
+      const rawReport = fs.readFileSync(demoReportPath, 'utf8');
+      const proof = await attestReport(rawReport, privateKey, did);
+      const proofPath = path.join(__dirname, 'demo_reports', 'high_quality_clean_pr66.proof.json');
+      fs.writeFileSync(proofPath, JSON.stringify(proof, null, 2));
+      console.log(`[T3N] Cryptographically signed demo report -> ${proofPath}`);
+    }
   }
 
   return { did, address };

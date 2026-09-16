@@ -138,8 +138,6 @@ class TestRepoGateEngine(unittest.TestCase):
         clean_proof_path = os.path.join(PROJECT_ROOT, "demo_reports", "high_quality_clean_pr66.proof.json")
         verify_cmd = ["node", "verify_proof.js", clean_report_path, clean_proof_path]
         v_proc = subprocess.run(verify_cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
-        if v_proc.returncode != 0:
-            print("V_PROC_FAIL:", v_proc.stdout, v_proc.stderr)
         self.assertEqual(v_proc.returncode, 0)
         self.assertIn("SUCCESS: Proof is cryptographically valid", v_proc.stdout)
 
