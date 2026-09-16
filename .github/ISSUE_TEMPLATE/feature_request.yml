@@ -1,0 +1,43 @@
+name: Feature Request
+description: Propose a new enforcement gate, integration adapter, or enhancement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for proposing an enhancement to RepoGate!
+  - type: dropdown
+    id: component
+    attributes:
+      label: Target Component
+      description: Which area of RepoGate does this feature affect?
+      options:
+        - "CLI Interface"
+        - "6-Gate Evaluation Engine"
+        - "Cryptographic Attestation & Verifier"
+        - "GitHub Action Adapter"
+        - "Packaging & Distribution"
+        - "Documentation & Guidelines"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement or Use Case
+      description: What problem are you trying to solve or what workflow are you enabling?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution / Behavior
+      description: How should this feature work in practice?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative designs or workarounds you have evaluated?
+    validations:
+      required: false

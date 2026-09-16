@@ -1,0 +1,60 @@
+name: Bug Report
+description: Report an issue, false positive, or unexpected behavior in RepoGate
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please ensure you do not share any sensitive credentials, GitHub tokens, or private keys.
+  - type: input
+    id: version
+    attributes:
+      label: RepoGate Version
+      description: What version of RepoGate are you using? (e.g., `repogate --version`)
+      placeholder: "1.1.0.dev0"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment & Python Version
+      description: Operating system and Python version (e.g., macOS 15, Ubuntu 24.04, Python 3.12.2)
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command Executed
+      description: The exact command you ran
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior & Output
+      description: What actually occurred? Include error logs or terminal output
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal Reproduction Steps
+      description: Clear, isolated steps to reproduce the issue
+    validations:
+      required: false
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Security & Token Hygiene Confirmation
+      options:
+        - label: I have verified that no private tokens, API keys, credentials, or private repository data are present in this report.
+          required: true
