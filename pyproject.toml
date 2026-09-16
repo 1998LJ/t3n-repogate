@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "t3n-repogate"
-version = "1.1.0.dev0"
+version = "1.1.0"
 description = "Autonomous PR Quality & Cryptographic Attestation Gate Agent"
 readme = "README.md"
 license = "MIT"
@@ -15,6 +15,12 @@ dependencies = [
     "requests>=2.28.0",
     "eth-account>=0.10.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/1998LJ/t3n-repogate"
+Repository = "https://github.com/1998LJ/t3n-repogate"
+Issues = "https://github.com/1998LJ/t3n-repogate/issues"
+Changelog = "https://github.com/1998LJ/t3n-repogate/blob/main/CHANGELOG.md"
 
 [tool.setuptools.package-data]
 "repogate.data" = ["*.json"]

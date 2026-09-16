@@ -6,6 +6,9 @@ import sys
 import unittest
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(REPO_ROOT / "src"))
+
 
 class TestRepoGateCLI(unittest.TestCase):
     def setUp(self):
@@ -131,6 +134,7 @@ class TestRepoGateCLI(unittest.TestCase):
             self.assertEqual(code, 1)
 
     def test_cli_audit_runtime_error_returns_2(self):
+        import io
         from unittest.mock import MagicMock, patch
 
         from repogate.cli import build_parser, run_audit
@@ -143,8 +147,9 @@ class TestRepoGateCLI(unittest.TestCase):
             mock_inst.evaluate_pr.side_effect = RuntimeError("API Rate limit exceeded")
             mock_engine_cls.return_value = mock_inst
 
-            code = run_audit(args)
-            self.assertEqual(code, 2)
+            with patch("sys.stderr", io.StringIO()):
+                code = run_audit(args)
+                self.assertEqual(code, 2)
 
     def test_cli_audit_passes_token_to_github_token(self):
         from unittest.mock import MagicMock, patch

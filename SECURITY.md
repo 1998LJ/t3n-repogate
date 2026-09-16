@@ -6,11 +6,12 @@ RepoGate is an automated gatekeeper designed to inspect pull requests and enforc
 
 ## Supported Versions
 
-RepoGate is actively preparing the `v1.1` distribution-ready release. Security fixes are developed and backported against the active `main` branch and the latest published distribution package.
+Security fixes are released for the active stable release stream and developed on the default development branch (`main`).
 
 | Version | Supported | Status |
 | :--- | :--- | :--- |
-| `1.1.0.dev0` / `main` | :white_check_mark: | Active Development |
+| `1.1.x` (`v1.1.0`) | :white_check_mark: | Supported GA Release |
+| `main` | :white_check_mark: | Active Development Branch |
 | `< 1.1.0` (Prototype) | :x: | Legacy Hackathon Snapshot |
 
 ---

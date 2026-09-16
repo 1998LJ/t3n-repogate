@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.0] - Unreleased
+## [1.1.0] - 2026-09-16
 
 ### Added
 - **Standard Python Packaging**: Modernized to PEP 621 packaging with `pyproject.toml` and console entry point `repogate`.
@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - **Fail-Closed Verification**: Ensured signature and identity checks fail immediately if packaged identity or signatures are corrupted.
-- **Immutable Actions Pinning**: Pinned all GitHub Action steps to 40-character immutable commit SHAs.
+- **Fail-Closed Action Configuration**: Fixed `fail-on-block` parsing to reject invalid boolean strings with exit code 2, eliminating silent fail-open risk.
+- **Immutable Actions Pinning**: Pinned all GitHub Action steps to 40-character immutable commit SHAs with Node 24 runtime support.
 - **Zero Token in Command Args**: GitHub tokens passed strictly via environment variables, avoiding command-line exposure.
 - **Read-Only Permissions**: Default CI and Action execution restricted to `contents: read` / read-only permissions.

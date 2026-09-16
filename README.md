@@ -18,7 +18,7 @@ RepoGate is an enterprise-grade automated gatekeeper for GitHub Pull Requests. I
 RepoGate core is pure Python and runs independently of Node.js:
 
 ```bash
-# Recommended for CLI usage (upcoming v1.1 PyPI release)
+# Recommended for CLI usage
 pipx install t3n-repogate
 
 # Or install in your active Python environment

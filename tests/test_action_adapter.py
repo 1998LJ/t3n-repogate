@@ -1,5 +1,6 @@
 """Unit tests for GitHub Action adapter."""
 
+import io
 import json
 import os
 import sys
@@ -23,16 +24,35 @@ from repogate.action_adapter import (
 
 
 class TestActionAdapter(unittest.TestCase):
-    def test_parse_bool(self):
-        self.assertTrue(parse_bool(True))
-        self.assertTrue(parse_bool("true"))
-        self.assertTrue(parse_bool("True"))
-        self.assertTrue(parse_bool("1"))
-        self.assertTrue(parse_bool("yes"))
-        self.assertFalse(parse_bool(False))
-        self.assertFalse(parse_bool("false"))
-        self.assertFalse(parse_bool("0"))
-        self.assertFalse(parse_bool("no"))
+    def test_parse_bool_true_values(self):
+        for val in (True, "true", "True", "TRUE", "1", "yes", "YES", "on", "ON"):
+            self.assertTrue(parse_bool(val), f"Failed for {val}")
+
+    def test_parse_bool_false_values(self):
+        for val in (False, "false", "False", "FALSE", "0", "no", "NO", "off", "OFF"):
+            self.assertFalse(parse_bool(val), f"Failed for {val}")
+
+    def test_parse_bool_invalid_rejected(self):
+        invalid_inputs = ["treu", "TRUEE", "foobar", "invalid", "", " ", "2", None, 42]
+        for val in invalid_inputs:
+            with self.assertRaises(ValueError, msg=f"Should raise ValueError for {val}"):
+                parse_bool(val)
+
+    def test_invalid_fail_on_block_exits_2(self):
+        env = {
+            "INPUT_GITHUB-TOKEN": "test-token-123",
+            "INPUT_PR-URL": "https://github.com/org/repo/pull/1",
+            "INPUT_FAIL-ON-BLOCK": "treu",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            stderr_io = io.StringIO()
+            with patch("sys.stderr", stderr_io):
+                code = run_action_adapter()
+                self.assertEqual(code, 2)
+            err_msg = stderr_io.getvalue()
+            self.assertIn("Error:", err_msg)
+            self.assertIn("Invalid boolean value", err_msg)
+            self.assertIn("treu", err_msg)
 
     def test_resolve_pr_url_explicit_wins(self):
         url = "https://github.com/foo/bar/pull/42"
@@ -68,8 +88,9 @@ class TestActionAdapter(unittest.TestCase):
 
     def test_missing_token_fails_exit_2(self):
         with patch.dict(os.environ, {}, clear=True):
-            code = run_action_adapter()
-            self.assertEqual(code, 2)
+            with patch("sys.stderr", io.StringIO()):
+                code = run_action_adapter()
+                self.assertEqual(code, 2)
 
     @patch("repogate.action_adapter.run_audit")
     def test_fail_on_block_true_returns_1(self, mock_audit):

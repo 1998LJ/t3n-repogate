@@ -8,7 +8,7 @@ except PackageNotFoundError:
     try:
         __version__ = version("repogate")
     except PackageNotFoundError:
-        __version__ = "1.1.0.dev0"
+        __version__ = "1.1.0"
 
 from .engine import RepoGateEngine
 
