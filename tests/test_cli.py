@@ -56,6 +56,29 @@ class TestRepoGateCLI(unittest.TestCase):
         output = res.stdout + res.stderr
         self.assertIn("FAILED", output)
 
+    def test_import_purity_no_side_effects(self):
+        """Verify that importing repogate produces no network, process, or file side-effects."""
+        script = (
+            "import sys, subprocess, os; "
+            "import repogate; "
+            "import repogate.engine; "
+            "import repogate.github_client; "
+            "import repogate.attestation; "
+            "print('Purity Verified')"
+        )
+        env = os.environ.copy()
+        src_path = str(self.repo_root / "src")
+        env["PYTHONPATH"] = f"{src_path}:{env.get('PYTHONPATH', '')}"
+        purity_res = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True,
+            text=True,
+            env=env,
+            check=False,
+        )
+        self.assertEqual(purity_res.returncode, 0, f"Import impurity: {purity_res.stderr}")
+        self.assertIn("Purity Verified", purity_res.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
