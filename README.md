@@ -7,7 +7,7 @@ Autonomous PR Quality & Cryptographic Attestation Gate Agent.
 [![Python: 3.10+](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://www.python.org/downloads/)
 [![Code Style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-RepoGate is an enterprise-grade automated gatekeeper for GitHub Pull Requests. It evaluates code modifications across 6 rigorous safety gates, detects duplicate or superseded race-condition PRs, identifies silent regressions, and produces untamperable cryptographic proofs bound to a persistent Agent DID via EIP-191 ECDSA signatures.
+RepoGate is an enterprise-grade automated gatekeeper for GitHub Pull Requests. It evaluates code modifications across 6 rigorous safety gates, detects duplicate or superseded race-condition PRs, identifies silent regressions, and produces tamper-evident cryptographic proofs bound to a persistent Agent DID via EIP-191 ECDSA signatures.
 
 ---
 
@@ -57,6 +57,50 @@ repogate verify report.json proof.json
 - **Exit Code `0`**: Proof is valid, report is untampered, and signed by the canonical authorized identity.
 - **Exit Code `1`**: Hash mismatch (tampering detected), wrong signer, invalid DID, or corrupted signature.
 - **Exit Code `2`**: File I/O, network, or execution error.
+
+---
+
+## GitHub Action Integration
+
+RepoGate can be integrated directly into your repository's PR workflows without cloning or running Node.js.
+
+> **Note**: `@v1` becomes available after the v1.1 GA release. During pre-release, use `@main` or commit SHAs.
+
+```yaml
+name: RepoGate
+
+on:
+  pull_request:
+
+permissions:
+  actions: read
+  contents: read
+  issues: read
+  pull-requests: read
+  statuses: read
+
+jobs:
+  repogate:
+    runs-on: ubuntu-latest
+    steps:
+      - id: repogate
+        uses: 1998LJ/t3n-repogate@v1
+        with:
+          github-token: ${{ github.token }}
+          fail-on-block: "true" # Default: fails the workflow if PR is marked BLOCKED
+
+      - name: Inspect Verdict
+        if: always()
+        run: |
+          echo "Target: ${{ steps.repogate.outputs.target }}"
+          echo "Risk: ${{ steps.repogate.outputs.risk-score }}"
+          echo "Decision: ${{ steps.repogate.outputs.recommended-action }}"
+          echo "Report: ${{ steps.repogate.outputs.report-path }}"
+```
+
+### Action Modes
+- **Enforcement Gate (`fail-on-block: "true"`)**: Automatically blocks the workflow (exit code 1) if RepoGate determines the PR is `BLOCKED`.
+- **Advisory Mode (`fail-on-block: "false"`)**: Evaluates risk and exports machine-readable findings without breaking the CI pipeline.
 
 ---
 
