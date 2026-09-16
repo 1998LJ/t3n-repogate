@@ -3,12 +3,12 @@
 import argparse
 import json
 import os
-import subprocess
 import sys
 from pathlib import Path
 from typing import List, Optional
 
 from . import __version__
+from .attestation import verify_proof_with_node
 from .engine import RepoGateEngine
 
 
@@ -57,47 +57,12 @@ def run_verify(args: argparse.Namespace) -> int:
     1 = Proof invalid, tampered, or verification failed
     2 = File not found or execution error
     """
-    report_file = Path(args.report)
-    proof_file = Path(args.proof)
-
-    if not report_file.is_file():
-        sys.stderr.write(f"Error: report file not found: {report_file}\n")
-        return 2
-    if not proof_file.is_file():
-        sys.stderr.write(f"Error: proof file not found: {proof_file}\n")
-        return 2
-
-    # Look for verify_proof.js in common locations
-    candidates = [
-        Path(__file__).parent.parent.parent / "verify_proof.js",
-        Path.cwd() / "verify_proof.js",
-        Path(__file__).parent / "verify_proof.js",
-    ]
-    script_path = None
-    for c in candidates:
-        if c.is_file():
-            script_path = c
-            break
-
-    if not script_path:
-        sys.stderr.write("Error: verify_proof.js not found in repository\n")
-        return 2
-
-    try:
-        res = subprocess.run(
-            ["node", str(script_path), str(report_file), str(proof_file)],
-            capture_output=True,
-            text=True,
-        )
-        sys.stdout.write(res.stdout)
-        sys.stderr.write(res.stderr)
-        return 0 if res.returncode == 0 else 1
-    except FileNotFoundError:
-        sys.stderr.write("Error: 'node' executable not found in PATH\n")
-        return 2
-    except Exception as e:
-        sys.stderr.write(f"Error executing verification: {e}\n")
-        return 2
+    code, out, err = verify_proof_with_node(args.report, args.proof)
+    if out:
+        sys.stdout.write(out)
+    if err:
+        sys.stderr.write(err)
+    return code
 
 
 def build_parser() -> argparse.ArgumentParser:
