@@ -12,12 +12,25 @@ from typing import Any, Dict, Optional
 
 from repogate.cli import build_parser, run_audit
 
+TRUE_VALUES = {"true", "1", "yes", "on"}
+FALSE_VALUES = {"false", "0", "no", "off"}
+
 
 def parse_bool(val: Any) -> bool:
-    """Safely parse boolean inputs from GitHub Action environment."""
+    """Safely and strictly parse boolean inputs from GitHub Action environment."""
     if isinstance(val, bool):
         return val
-    return str(val).strip().lower() in ("true", "1", "yes", "on")
+
+    normalized = str(val).strip().lower()
+
+    if normalized in TRUE_VALUES:
+        return True
+    if normalized in FALSE_VALUES:
+        return False
+
+    raise ValueError(
+        f"Invalid boolean value: {val!r}. Expected true/false, 1/0, yes/no, or on/off."
+    )
 
 
 def resolve_pr_url(explicit_url: Optional[str], event_path: Optional[str]) -> str:
@@ -107,7 +120,11 @@ def run_action_adapter() -> int:
         sys.stderr.write(f"Error: {e}\n")
         return 2
 
-    fail_on_block = parse_bool(os.environ.get("INPUT_FAIL-ON-BLOCK", "true"))
+    try:
+        fail_on_block = parse_bool(os.environ.get("INPUT_FAIL-ON-BLOCK", "true"))
+    except ValueError as e:
+        sys.stderr.write(f"Error: {e}\n")
+        return 2
     explicit_report_path = os.environ.get("INPUT_REPORT-PATH", "")
     report_file = resolve_report_path(explicit_report_path)
 
