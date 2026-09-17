@@ -148,6 +148,7 @@ jobs:
           TAG_NAME: ${{ github.ref_name }}
         run: |
           gh release create "$TAG_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
             release-bundle/dists/*.whl \
             release-bundle/dists/*.tar.gz \
             release-bundle/SHA256SUMS \
