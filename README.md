@@ -64,7 +64,7 @@ repogate verify report.json proof.json
 
 RepoGate can be integrated directly into your repository's PR workflows without cloning or running Node.js.
 
-> **Note**: `@v1` becomes available after the v1.1 GA release. During pre-release, use `@main` or commit SHAs.
+> **Recommended**: use `1998LJ/t3n-repogate@v1` for the latest compatible v1 release. Pin `1998LJ/t3n-repogate@v1.1.0` when you need an immutable exact version.
 
 ```yaml
 name: RepoGate
