@@ -39,9 +39,27 @@ class TestRepoGateEngine(unittest.TestCase):
             }
         ]
         res = self.engine._eval_regression_test_gate(files)
-        self.assertEqual(res["status"], "PASSED")
-        self.assertTrue(res["xfail_removed_verified"])
+        self.assertEqual(res["status"], "PASS")
+        self.assertEqual(res["evidence"], [])
         self.assertEqual(res["test_files"], ["tests/test_foo.py"])
+
+    def test_regression_guard_removed_assertion(self):
+        files = [{
+            "filename": "tests/test_cli.py",
+            "patch": "@@ -1 +1 @@\n-assert payload['x'] == 1\n+assert payload['x'] is not None",
+        }]
+        res = self.engine._eval_regression_test_gate(files)
+        self.assertEqual(res["status"], "REGRESSION_RISK")
+        self.assertEqual(res["evidence"][0]["type"], "REMOVED_ASSERTION")
+
+    def test_regression_guard_added_suppression(self):
+        files = [{
+            "filename": "tests/test_cli.py",
+            "patch": "@@ -1,0 +1 @@\n+@pytest.mark.skip(reason='flaky')",
+        }]
+        res = self.engine._eval_regression_test_gate(files)
+        self.assertEqual(res["status"], "REGRESSION_RISK")
+        self.assertEqual(res["evidence"][0]["type"], "TEST_SUPPRESSION_ADDED")
 
     def test_regression_guard_no_tests_for_code_change(self):
         files = [
@@ -51,8 +69,16 @@ class TestRepoGateEngine(unittest.TestCase):
             }
         ]
         res = self.engine._eval_regression_test_gate(files)
-        self.assertEqual(res["status"], "MISSING_TESTS")
+        self.assertEqual(res["status"], "WARNING")
         self.assertIn("Modified 1 production code files", res["reason"])
+
+    def test_merge_readiness_contract(self):
+        self.assertEqual(self.engine.merge_readiness_for("MERGE_READY"), "READY")
+        self.assertEqual(self.engine.merge_readiness_for("MERGED"), "READY")
+        self.assertEqual(self.engine.merge_readiness_for("WAIT_FOR_REVIEW"), "WAITING")
+        self.assertEqual(self.engine.merge_readiness_for("FIX_REQUIRED"), "BLOCKED")
+        self.assertEqual(self.engine.merge_readiness_for("CLOSE_DUPLICATE"), "BLOCKED")
+        self.assertEqual(self.engine.merge_readiness_for("SUPERSEDED"), "BLOCKED")
 
     def test_duplicate_gate_merged_issue(self):
         def mock_side_effect(url, **kwargs):

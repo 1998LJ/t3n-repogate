@@ -40,9 +40,9 @@ def run_audit(args: argparse.Namespace) -> int:
         summary = engine.format_markdown_report(report)
         sys.stdout.write(summary + "\n")
 
-    # Exit code contract: 0 = READY, 1 = BLOCKED
+    # Exit code contract: 0 = READY or WAITING, 1 = BLOCKED
     merge_readiness = report.get("merge_readiness")
-    return 0 if merge_readiness == "READY" else 1
+    return 1 if merge_readiness == "BLOCKED" else 0
 
 
 def run_verify(args: argparse.Namespace) -> int:

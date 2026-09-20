@@ -37,7 +37,7 @@ outputs:
     value: ${{ steps.audit.outputs.risk-score }}
 
   merge-readiness:
-    description: "Merge readiness assessment (READY / BLOCKED)"
+    description: "Merge readiness assessment (READY / WAITING / BLOCKED)"
     value: ${{ steps.audit.outputs.merge-readiness }}
 
   recommended-action:
