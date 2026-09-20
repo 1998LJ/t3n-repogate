@@ -409,8 +409,16 @@ class RepoGateEngine:
 
             if not is_test:
                 continue
-            removed = [line[1:].strip() for line in patch.splitlines() if line.startswith("-") and not line.startswith("---")]
-            added = [line[1:].strip() for line in patch.splitlines() if line.startswith("+") and not line.startswith("+++")]
+            removed = [
+                line[1:].strip()
+                for line in patch.splitlines()
+                if line.startswith("-") and not line.startswith("---")
+            ]
+            added = [
+                line[1:].strip()
+                for line in patch.splitlines()
+                if line.startswith("+") and not line.startswith("+++")
+            ]
             removed_assertions = [line for line in removed if assertion_re.search(line)]
             added_assertions = [line for line in added if assertion_re.search(line)]
             added_suppressions = [line for line in added if suppression_re.search(line)]

@@ -44,19 +44,23 @@ class TestRepoGateEngine(unittest.TestCase):
         self.assertEqual(res["test_files"], ["tests/test_foo.py"])
 
     def test_regression_guard_removed_assertion(self):
-        files = [{
-            "filename": "tests/test_cli.py",
-            "patch": "@@ -1 +1 @@\n-assert payload['x'] == 1\n+assert payload['x'] is not None",
-        }]
+        files = [
+            {
+                "filename": "tests/test_cli.py",
+                "patch": "@@ -1 +1 @@\n-assert payload['x'] == 1\n+assert payload['x'] is not None",
+            }
+        ]
         res = self.engine._eval_regression_test_gate(files)
         self.assertEqual(res["status"], "REGRESSION_RISK")
         self.assertEqual(res["evidence"][0]["type"], "REMOVED_ASSERTION")
 
     def test_regression_guard_added_suppression(self):
-        files = [{
-            "filename": "tests/test_cli.py",
-            "patch": "@@ -1,0 +1 @@\n+@pytest.mark.skip(reason='flaky')",
-        }]
+        files = [
+            {
+                "filename": "tests/test_cli.py",
+                "patch": "@@ -1,0 +1 @@\n+@pytest.mark.skip(reason='flaky')",
+            }
+        ]
         res = self.engine._eval_regression_test_gate(files)
         self.assertEqual(res["status"], "REGRESSION_RISK")
         self.assertEqual(res["evidence"][0]["type"], "TEST_SUPPRESSION_ADDED")
