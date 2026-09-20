@@ -57,6 +57,15 @@ class RepoGateEngine:
     def _headers(self) -> Dict[str, str]:
         return self.github._headers()
 
+    @staticmethod
+    def merge_readiness_for(recommendation: str) -> str:
+        """Map recommendation semantics to READY, WAITING, or BLOCKED."""
+        if recommendation in ["MERGE_READY", "MERGED"]:
+            return "READY"
+        if recommendation == "WAIT_FOR_REVIEW":
+            return "WAITING"
+        return "BLOCKED"
+
     def analyze_pr(self, owner: str, repo: str, pr_number: int) -> Dict[str, Any]:
         """Runs the complete 6-gate evaluation on a given PR."""
         base_api = f"https://api.github.com/repos/{owner}/{repo}"
@@ -110,12 +119,12 @@ class RepoGateEngine:
             risk_score += 40
             blocking.append(f"CI failed on {ci_gate.get('failed_workflow') or 'remote check'}")
 
-        if test_gate["status"] == "MISSING_TESTS":
+        if test_gate["status"] == "REGRESSION_RISK":
+            risk_score += 50
+            blocking.append(test_gate["reason"])
+        elif test_gate["status"] == "WARNING":
             risk_score += 25
             warnings.append(test_gate["reason"])
-        elif test_gate["status"] == "UNVERIFIED_XFAIL_REMOVAL":
-            risk_score += 30
-            blocking.append(test_gate["reason"])
 
         if scope_gate["status"] == "EXCESSIVE_SCOPE":
             risk_score += 20
@@ -150,9 +159,7 @@ class RepoGateEngine:
             "base_branch": pr.get("base", {}).get("ref"),
             "head_branch": pr.get("head", {}).get("ref"),
             "risk_score": risk_score,
-            "merge_readiness": "READY"
-            if recommendation in ["MERGE_READY", "MERGED"]
-            else "BLOCKED",
+            "merge_readiness": self.merge_readiness_for(recommendation),
             "recommended_action": recommendation,
             "gates": {
                 "duplicate_gate": duplicate_gate,
@@ -379,41 +386,98 @@ class RepoGateEngine:
         }
 
     def _eval_regression_test_gate(self, files: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        P0-6: Evaluates regression test presence, production logic vs test changes,
-        and verifies xfail removal.
-        """
-        prod_files = []
-        test_files = []
-        xfail_removed = False
+        """Detect deterministic high-confidence test-regression signals."""
+        prod_files: List[str] = []
+        test_files: List[str] = []
+        evidence: List[Dict[str, Any]] = []
+        warnings: List[Dict[str, Any]] = []
+        assertion_re = re.compile(
+            r"(?:\bassert\b|\bself\.assert(?:Equal|NotEqual|True|False|Raises|In|Is)\b)"
+        )
+        suppression_re = re.compile(
+            r"(?:@pytest\.mark\.(?:skip|skipif|xfail)\b|pytest\.skip\s*\(|@unittest\.skip\b)"
+        )
 
         for f in files:
             fname = f.get("filename", "")
-            patch = f.get("patch", "")
-            if any(t_dir in fname for t_dir in ["tests/", "test/", "_test.py", "test_"]):
+            patch = f.get("patch", "") or ""
+            is_test = any(t_dir in fname for t_dir in ["tests/", "test/", "_test.py", "test_"])
+            if is_test:
                 test_files.append(fname)
-                if "-    @pytest.mark.xfail" in patch or "-@pytest.mark.xfail" in patch:
-                    xfail_removed = True
             elif fname.endswith((".py", ".js", ".ts", ".go", ".rs", ".java")):
                 prod_files.append(fname)
 
-        if xfail_removed and not test_files:
-            return {
-                "status": "UNVERIFIED_XFAIL_REMOVAL",
-                "reason": "xfail marker was removed without explicit test execution or test assertion verification",
-            }
+            if not is_test:
+                continue
+            removed = [line[1:].strip() for line in patch.splitlines() if line.startswith("-") and not line.startswith("---")]
+            added = [line[1:].strip() for line in patch.splitlines() if line.startswith("+") and not line.startswith("+++")]
+            removed_assertions = [line for line in removed if assertion_re.search(line)]
+            added_assertions = [line for line in added if assertion_re.search(line)]
+            added_suppressions = [line for line in added if suppression_re.search(line)]
+            removed_functions = [line for line in removed if re.match(r"def test_\w+\s*\(", line)]
 
+            if removed_assertions:
+                for line in removed_assertions:
+                    replacement = any(candidate == line for candidate in added_assertions)
+                    item = {
+                        "type": "REMOVED_ASSERTION",
+                        "file": fname,
+                        "removed_line": line,
+                        "severity": "medium" if replacement else "high",
+                    }
+                    (warnings if replacement else evidence).append(item)
+            for line in added_suppressions:
+                evidence.append(
+                    {
+                        "type": "TEST_SUPPRESSION_ADDED",
+                        "file": fname,
+                        "added_line": line,
+                        "severity": "high",
+                    }
+                )
+            for line in removed_functions:
+                evidence.append(
+                    {
+                        "type": "REMOVED_TEST_COVERAGE",
+                        "file": fname,
+                        "removed_line": line,
+                        "severity": "high",
+                    }
+                )
+            if f.get("status") == "removed" or (removed and not added and fname.endswith(".py")):
+                evidence.append(
+                    {
+                        "type": "REMOVED_TEST_COVERAGE",
+                        "file": fname,
+                        "removed_line": "test file removed",
+                        "severity": "high",
+                    }
+                )
+
+        if evidence:
+            return {
+                "status": "REGRESSION_RISK",
+                "reason": "High-confidence test regression signal detected",
+                "evidence": evidence,
+                "warnings": warnings,
+                "prod_files": prod_files,
+                "test_files": test_files,
+            }
         if prod_files and not test_files:
             return {
-                "status": "MISSING_TESTS",
+                "status": "WARNING",
                 "reason": f"Modified {len(prod_files)} production code files without adding or updating test cases",
+                "evidence": [],
+                "prod_files": prod_files,
+                "test_files": test_files,
             }
-
         return {
-            "status": "PASSED",
+            "status": "PASS",
+            "reason": "No deterministic test regression signal detected",
+            "evidence": [],
+            "warnings": warnings,
             "prod_files": prod_files,
             "test_files": test_files,
-            "xfail_removed_verified": xfail_removed,
         }
 
     def _eval_scope_gate(self, pr: Dict[str, Any], files: List[Dict[str, Any]]) -> Dict[str, Any]:

@@ -102,6 +102,11 @@ jobs:
 - **Enforcement Gate (`fail-on-block: "true"`)**: Automatically blocks the workflow (exit code 1) if RepoGate determines the PR is `BLOCKED`.
 - **Advisory Mode (`fail-on-block: "false"`)**: Evaluates risk and exports machine-readable findings without breaking the CI pipeline.
 
+`merge-readiness` has three states:
+- `READY`: `MERGE_READY` or `MERGED`.
+- `WAITING`: `WAIT_FOR_REVIEW` or CI is still pending/submitted with no blocking finding.
+- `BLOCKED`: `FIX_REQUIRED`, `CLOSE_DUPLICATE`, `SUPERSEDED`, or another explicit blocking finding.
+
 ---
 
 ## Architecture Overview
@@ -128,7 +133,7 @@ External Developer / CI
 1. **Duplicate PR Gate**: Identifies identical issue resolutions and previously closed/merged PR duplicates.
 2. **Superseded Race Gate**: Flags competing PRs that modify identical target files within close intervals.
 3. **CI Status Gate**: Validates head commit GitHub Actions runs (success / pending / failure).
-4. **Regression Guard**: Intercepts removed tests, loosened assertions, and suppressed pytest markers.
+4. **Regression Guard**: Detects high-confidence removed assertions, removed test coverage, and newly added test suppressions; emits structured evidence with `PASS`, `WARNING`, or `REGRESSION_RISK`.
 5. **Scope Guard**: Detects out-of-scope modifications, massive multi-file changes, and unintended file mutations.
 6. **Policy Guard**: Intercepts unconfirmed bounty claims, fake SLA commitments, leaked tokens, and unauthorized licenses.
 

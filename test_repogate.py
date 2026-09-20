@@ -39,8 +39,7 @@ class TestRepoGateEngine(unittest.TestCase):
             }
         ]
         res = self.engine._eval_regression_test_gate(files)
-        self.assertEqual(res["status"], "PASSED")
-        self.assertTrue(res["xfail_removed_verified"])
+        self.assertEqual(res["status"], "PASS")
         self.assertEqual(res["test_files"], ["tests/test_foo.py"])
 
     def test_regression_guard_no_tests_for_code_change(self):
@@ -51,7 +50,7 @@ class TestRepoGateEngine(unittest.TestCase):
             }
         ]
         res = self.engine._eval_regression_test_gate(files)
-        self.assertEqual(res["status"], "MISSING_TESTS")
+        self.assertEqual(res["status"], "WARNING")
         self.assertIn("Modified 1 production code files", res["reason"])
 
     def test_duplicate_gate_merged_issue(self):
