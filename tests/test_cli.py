@@ -110,6 +110,26 @@ class TestRepoGateCLI(unittest.TestCase):
             mock_engine_cls.assert_called_once_with(github_token=None)
             mock_inst.evaluate_pr.assert_called_once_with("https://github.com/owner/repo/pull/10")
 
+    def test_cli_audit_waiting_returns_0(self):
+        from unittest.mock import MagicMock, patch
+
+        from repogate.cli import build_parser, run_audit
+
+        parser = build_parser()
+        args = parser.parse_args(["audit", "https://github.com/owner/repo/pull/10"])
+        mock_report = {
+            "pr_url": "https://github.com/owner/repo/pull/10",
+            "merge_readiness": "WAITING",
+            "risk_score": 0,
+            "gates": {"ci_gate": {"status": "Submitted"}},
+        }
+        with patch("repogate.cli.RepoGateEngine") as mock_engine_cls:
+            mock_inst = MagicMock()
+            mock_inst.evaluate_pr.return_value = mock_report
+            mock_inst.format_markdown_report.return_value = "Mock waiting summary"
+            mock_engine_cls.return_value = mock_inst
+            self.assertEqual(run_audit(args), 0)
+
     def test_cli_audit_blocked_returns_1(self):
         from unittest.mock import MagicMock, patch
 
