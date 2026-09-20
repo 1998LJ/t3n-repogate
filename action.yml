@@ -53,7 +53,7 @@ outputs:
     value: ${{ steps.audit.outputs.report-path }}
 
   audit-exit-code:
-    description: "RepoGate CLI original exit code (0=READY, 1=BLOCKED, 2=Error)"
+    description: "RepoGate CLI original exit code (0=READY or WAITING, 1=BLOCKED, 2=Error)"
     value: ${{ steps.audit.outputs.audit-exit-code }}
 
 runs:
