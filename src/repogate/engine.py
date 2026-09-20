@@ -444,7 +444,7 @@ class RepoGateEngine:
                         "severity": "high",
                     }
                 )
-            if f.get("status") == "removed" or (removed and not added and fname.endswith(".py")):
+            if f.get("status") == "removed":
                 evidence.append(
                     {
                         "type": "REMOVED_TEST_COVERAGE",
